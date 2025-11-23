@@ -10,6 +10,7 @@ const sdl = @cImport({
 
 var renderer: ?*sdl.SDL_Renderer = null;
 var window: ?*sdl.SDL_Window = null;
+var fenixFont: ?*sdl.TTF_Font = null;
 
 const HEIGHT: c_int = 720;
 const WIDTH: c_int = 1280;
@@ -44,6 +45,12 @@ pub fn init() u4 {
         return 1;
     }
 
+    fenixFont = sdl.TTF_OpenFont("./res/font/Fenix-Regular.ttf", 24);
+    if (fenixFont == null) {
+        std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
+        return 1;
+    }
+
     window = sdl.SDL_CreateWindow("NatucciAA", sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, 1280, HEIGHT, sdl.SDL_WINDOW_SHOWN);
     if (window == null) {
         std.debug.print("Erro ao criar Janela -> {s}", .{sdl.SDL_GetError()});
@@ -61,15 +68,26 @@ pub fn init() u4 {
 }
 
 pub fn quitEmAll() void {
+    sdl.SDL_DestroyWindow(window);
+    sdl.SDL_DestroyRenderer(renderer);
+    sdl.TTF_CloseFont(fenixFont);
+
     sdl.Mix_Quit();
     sdl.SDL_Quit();
-    sdl.SDL_DestroyWindow(window);
     sdl.TTF_Quit();
 }
 
 pub fn loop() !void {
     var event: sdl.SDL_Event = undefined;
     var running = true;
+
+    const textColor: sdl.SDL_Color = .{ .r = 255, .g = 0, .b = 0, .a = 0 };
+
+    var text: ?*sdl.SDL_Surface = null;
+    text = sdl.TTF_RenderText_Solid(fenixFont, "NATUCCI AA", textColor);
+
+    const textoTextura = sdl.SDL_CreateTextureFromSurface(renderer, text);
+    sdl.SDL_FreeSurface(text);
 
     while (running) {
         while (sdl.SDL_PollEvent(&event) != 0) {
@@ -81,11 +99,10 @@ pub fn loop() !void {
         _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         _ = sdl.SDL_RenderClear(renderer);
 
-        var rect: sdl.SDL_Rect = .{ .x = 20, .y = 20, .w = 100, .h = 100 };
+        const destination: sdl.SDL_Rect = .{ .x = 20, .y = 20, .w = 500, .h = 200 };
 
         _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        _ = sdl.SDL_RenderDrawRect(renderer, &rect);
-
+        _ = sdl.SDL_RenderCopy(renderer, textoTextura, null, &destination);
         _ = sdl.SDL_RenderPresent(renderer);
     }
 }
