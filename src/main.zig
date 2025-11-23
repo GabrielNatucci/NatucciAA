@@ -1,6 +1,8 @@
 const std = @import("std");
 const NatucciAA = @import("NatucciAA");
 
+const timeUtil = @import("util/timeUtil.zig");
+
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("SDL2/SDL_image.h");
@@ -19,6 +21,7 @@ pub fn main() !void {
     if (init() > 0) {
         return;
     }
+
     defer quitEmAll();
 
     try loop();
@@ -45,7 +48,7 @@ pub fn init() u4 {
         return 1;
     }
 
-    fenixFont = sdl.TTF_OpenFont("./res/font/Fenix-Regular.ttf", 24);
+    fenixFont = sdl.TTF_OpenFont("./res/font/Fenix-Regular.ttf", 32);
     if (fenixFont == null) {
         std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
         return 1;
@@ -82,14 +85,14 @@ pub fn loop() !void {
     var running = true;
 
     const textColor: sdl.SDL_Color = .{ .r = 255, .g = 0, .b = 0, .a = 0 };
-
     var text: ?*sdl.SDL_Surface = null;
-    text = sdl.TTF_RenderText_Solid(fenixFont, "NATUCCI AA", textColor);
-
-    const textoTextura = sdl.SDL_CreateTextureFromSurface(renderer, text);
-    sdl.SDL_FreeSurface(text);
 
     while (running) {
+        var buffer: [6]u8 = undefined;
+        const time_str = try timeUtil.getCurrentTime(&buffer);
+        text = sdl.TTF_RenderText_Blended(fenixFont, time_str.ptr, textColor);
+        const textoTextura: ?*sdl.SDL_Texture = sdl.SDL_CreateTextureFromSurface(renderer, text);
+
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
                 sdl.SDL_QUIT => running = false,
@@ -99,10 +102,12 @@ pub fn loop() !void {
         _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         _ = sdl.SDL_RenderClear(renderer);
 
-        const destination: sdl.SDL_Rect = .{ .x = 20, .y = 20, .w = 500, .h = 200 };
+        const destination: sdl.SDL_Rect = .{ .x = 20, .y = 20, .w = text.?.w, .h = text.?.h };
 
         _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         _ = sdl.SDL_RenderCopy(renderer, textoTextura, null, &destination);
         _ = sdl.SDL_RenderPresent(renderer);
     }
+
+    sdl.SDL_FreeSurface(text);
 }
