@@ -69,6 +69,8 @@ pub fn quitEmAll() void {
     sdl.SDL_DestroyWindow(window);
     sdl.SDL_DestroyRenderer(renderer);
     sdl.TTF_CloseFont(fenixFont);
+
+    manager.?.deinit();
 }
 
 pub fn loop() !void {
@@ -77,14 +79,7 @@ pub fn loop() !void {
     var event: sdl.SDL_Event = undefined;
     var running = true;
 
-    const textColor: sdl.SDL_Color = .{ .r = 255, .g = 0, .b = 0, .a = 0 };
-    var text: ?*sdl.SDL_Surface = null;
-
     while (running) {
-        var buffer: [6]u8 = undefined;
-        const time_str = try timeUtil.getCurrentTime(&buffer);
-        text = sdl.TTF_RenderText_Blended(fenixFont, time_str.ptr, textColor);
-
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
                 sdl.SDL_QUIT => running = false,
@@ -94,6 +89,4 @@ pub fn loop() !void {
 
         rManager.render();
     }
-
-    sdl.SDL_FreeSurface(text);
 }
