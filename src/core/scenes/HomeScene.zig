@@ -9,16 +9,16 @@ pub const HomeScene = struct {
     horario: ?[6]u8,
 
     pub fn create() !HomeScene {
-        const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
-
         std.debug.print("Inicializando homeScene...\n", .{});
+
+        const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
 
         if (fonte == null) {
             std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
             return error.FonteNaoCarregada;
         } else {
             std.debug.print("Fonte da home carregada\n", .{});
-            sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);
+            sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);
         }
 
         return .{
