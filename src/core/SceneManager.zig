@@ -6,9 +6,25 @@ pub const SceneManager = struct {
     current_scene: ?Scene,
     old_scene: ?Scene,
     renderer: *sdl.SDL_Renderer,
+    background: *sdl.SDL_Texture,
 
-    pub fn init(renderer : *sdl.SDL_Renderer) SceneManager {
-        return .{ .current_scene = null, .old_scene = null, .renderer = renderer};
+    pub fn init(renderer: *sdl.SDL_Renderer) !SceneManager {
+        const backgroundSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/fundo.png");
+
+        if (backgroundSurface == null) {
+            std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.IMG_GetError()});
+            return error.FotoNaoCarregada;
+        }
+
+        const backgroundTexture: ?*sdl.SDL_Texture = sdl.SDL_CreateTextureFromSurface(renderer, backgroundSurface);
+        if (backgroundTexture == null) {
+            std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.IMG_GetError()});
+            return error.ErroAoCarregarTextura;
+        }
+
+        defer sdl.SDL_FreeSurface(backgroundSurface);
+
+        return .{ .current_scene = null, .old_scene = null, .renderer = renderer, .background = backgroundTexture.?};
     }
 
     pub fn setScene(self: *SceneManager, scene: Scene) !void {
@@ -27,8 +43,11 @@ pub const SceneManager = struct {
     }
 
     pub fn render(self: *SceneManager) void {
-        _ = sdl.SDL_SetRenderDrawColor(self.renderer, 255, 255, 255, 255);
-        _ = sdl.SDL_RenderClear(self.renderer);
+        // _ = sdl.SDL_SetRenderDrawColor(self.renderer, 0, 50, 100, 255);
+        // _ = sdl.SDL_RenderClear(self.renderer);
+        
+        var dir: sdl.SDL_Rect = .{.h = 720, .w = 1280, .x = 0, .y = 0}; 
+        _ = sdl.SDL_RenderCopy(self.renderer, self.background, null, &dir);
 
         if (self.current_scene) |scene| {
             scene.render(self.renderer);
@@ -57,6 +76,8 @@ pub const SceneManager = struct {
     }
 
     pub fn deinit(self: *SceneManager) void {
+        sdl.SDL_DestroyTexture(self.background);
+
         if (self.current_scene) |*scene| {
             scene.deinit();
         }

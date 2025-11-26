@@ -9,13 +9,14 @@ pub const HomeScene = struct {
     horario: ?[6]u8,
 
     pub fn create() !HomeScene {
-        const fonte = sdl.TTF_OpenFont("res/font/Fenix-Regular.ttf", 300);
+        const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
 
         if (fonte == null) {
             std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
             return error.FonteNaoCarregada;
         } else {
-            std.debug.print("Fonte carregada", .{});
+            std.debug.print("Fonte da home carregada\n", .{});
+            sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);
         }
 
         return .{
@@ -45,25 +46,21 @@ pub const HomeScene = struct {
     pub fn render(self: *HomeScene, renderer: *sdl.SDL_Renderer) void {
         if (self.horario == null) return;
 
-        const color: sdl.SDL_Color = .{ .a = 255, .b = 0, .g = 0, .r = 255 };
+        const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
         const textSurface = sdl.TTF_RenderText_Blended(self.fonteHorario, &self.horario.?, color);
         if (textSurface == null) return;
-
         defer sdl.SDL_FreeSurface(textSurface);
 
         const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
         if (textTexture == null) return;
-
         defer sdl.SDL_DestroyTexture(textTexture);
 
         const width: c_int = textSurface.*.w;
         const height: c_int = textSurface.*.h;
 
-        var destination: sdl.SDL_Rect = .{ .x = 20, .y = 20, .w = width, .h = height };
+        var destination: sdl.SDL_Rect = .{ .x = 70, .y = 70, .w = width, .h = height };
 
-        _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        _ = sdl.SDL_RenderDrawRect(renderer, &destination);
         _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &destination);
     }
 

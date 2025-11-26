@@ -59,7 +59,10 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    manager = SceneManager.init(renderer.?);
+    manager = SceneManager.init(renderer.?)  catch |err| {
+        std.debug.print("Erro ao iniciar o SceneManager: {}", .{err});
+        return 1;
+    };
 
     manager.?.setScene(Scene.init("Home", &home.?)) catch |err| {
         std.debug.print("Erro ao trocar scene: {}\n", .{err});
