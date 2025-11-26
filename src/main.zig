@@ -140,5 +140,6 @@ pub fn loop() !void {
 
         rManager.update(delta_time);
         rManager.render();
+        sdl.SDL_Delay(16);
     }
 }
