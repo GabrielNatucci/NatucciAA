@@ -52,12 +52,10 @@ pub const Scene = struct {
         };
     }
     pub fn initScene(self: *Scene) !void {
-        std.debug.print("Ativando scene: {s}\n", .{self.name});
         return self.vtable.init(self.ptr);
     }
 
     pub fn deinit(self: *Scene) void {
-        std.debug.print("Desativando scene: {s}\n", .{self.name});
         self.vtable.deinit(self.ptr);
     }
 

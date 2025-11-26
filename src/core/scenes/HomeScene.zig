@@ -11,6 +11,8 @@ pub const HomeScene = struct {
     pub fn create() !HomeScene {
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
 
+        std.debug.print("Inicializando homeScene...\n", .{});
+
         if (fonte == null) {
             std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
             return error.FonteNaoCarregada;
@@ -27,20 +29,21 @@ pub const HomeScene = struct {
 
     pub fn init(self: *HomeScene) !void {
         _ = self;
-        std.debug.print("Inicializando scene...\n", .{});
+        std.debug.print("Inicializando homeScene... (init)\n", .{});
     }
 
     pub fn deinit(self: *HomeScene) void {
-        if (self.fonteHorario) |fonte| {
-            sdl.TTF_CloseFont(fonte);
+        if (self.fonteHorario != null)  {
+            sdl.TTF_CloseFont(self.fonteHorario);
         }
 
-        std.debug.print("Limpando recursos\n", .{});
+        std.debug.print("Desligando homeScene\n", .{});
     }
 
     pub fn update(self: *HomeScene, delta_time: f32) void {
         _ = delta_time;
         self.horario = timeUtil.getCurrentTime();
+
     }
 
     pub fn render(self: *HomeScene, renderer: *sdl.SDL_Renderer) void {

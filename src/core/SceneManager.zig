@@ -28,12 +28,15 @@ pub const SceneManager = struct {
     }
 
     pub fn setScene(self: *SceneManager, scene: Scene) !void {
-        if (self.current_scene) |*current| {
-            current.deinit();
-        }
+        // if (self.current_scene) |*current| {
+        //     current.deinit();
+        // }
+        //
+        
+        std.debug.print("Trocando de Scene: {s}\n", .{scene.name});
 
         self.current_scene = scene;
-        try self.current_scene.?.initScene();
+        // try self.current_scene.?.initScene();
     }
 
     pub fn update(self: *SceneManager, delta_time: f32) void {
@@ -77,9 +80,5 @@ pub const SceneManager = struct {
 
     pub fn deinit(self: *SceneManager) void {
         sdl.SDL_DestroyTexture(self.background);
-
-        if (self.current_scene) |*scene| {
-            scene.deinit();
-        }
     }
 };

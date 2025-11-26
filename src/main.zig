@@ -4,7 +4,8 @@ const NatucciAA = @import("NatucciAA");
 const timeUtil = @import("util/TimeUtil.zig");
 const sdlUtil = @import("util/SdlInternalUtils.zig");
 const sdl = @import("sdlImport/Sdl.zig").sdl;
-const HomeScene = @import("core/scenes/Home.zig").HomeScene;
+const HomeScene = @import("core/scenes/HomeScene.zig").HomeScene;
+const ConfigScene = @import("core/scenes/ConfigScene.zig").ConfigScene;
 const SceneManager = @import("core/SceneManager.zig").SceneManager;
 const Scene = @import("core/scenes/Scene.zig").Scene;
 
@@ -17,7 +18,12 @@ const alloc = std.heap.c_allocator;
 const HEIGHT: c_int = 720;
 const WIDTH: c_int = 1280;
 
-var home: ?HomeScene = null;
+var homeScene: ?Scene = null;
+var configScene: ?Scene = null;
+
+var homeTemplate: ?HomeScene = null;
+var configTemplate: ?ConfigScene = null;
+
 var manager: ?SceneManager = null;
 
 pub fn main() !void {
@@ -54,17 +60,25 @@ pub fn initSomeStuff() u2 {
         return 1;
     }
 
-    home = HomeScene.create() catch |err| {
-        std.debug.print("Ocorreu um erro: {}\n", .{err});
-        return 1;
-    };
-
-    manager = SceneManager.init(renderer.?)  catch |err| {
+    manager = SceneManager.init(renderer.?) catch |err| {
         std.debug.print("Erro ao iniciar o SceneManager: {}", .{err});
         return 1;
     };
 
-    manager.?.setScene(Scene.init("Home", &home.?)) catch |err| {
+    homeTemplate = HomeScene.create() catch |err| {
+        std.debug.print("Ocorreu um erro ao criar a HomeScene: {}\n", .{err});
+        return 1;
+    };
+
+    configTemplate = ConfigScene.create() catch |err| {
+        std.debug.print("Ocorreu um erro ao criar a ConfigScene: {}\n", .{err});
+        return 1;
+    };
+
+    homeScene = Scene.init("Home", &homeTemplate.?);
+    configScene = Scene.init("Config", &configTemplate.?);
+
+    manager.?.setScene(homeScene.?) catch |err| {
         std.debug.print("Erro ao trocar scene: {}\n", .{err});
         return 1;
     };
@@ -77,6 +91,9 @@ pub fn quitEmAll() void {
     sdl.SDL_DestroyRenderer(renderer);
     sdl.TTF_CloseFont(fenixFont);
 
+    homeScene.?.deinit();
+    configScene.?.deinit();
+
     manager.?.deinit();
 }
 
@@ -84,25 +101,44 @@ pub fn loop() !void {
     var rManager: SceneManager = manager.?;
     var event: sdl.SDL_Event = undefined;
     var running = true;
-    
+
     // ← Adicione estas 2 linhas
     var last_time: u64 = sdl.SDL_GetTicks64();
     var delta_time: f32 = 0;
-    
+
     while (running) {
         const current_time = sdl.SDL_GetTicks64();
         const delta_ms = current_time - last_time;
         last_time = current_time;
         delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
-        
+
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
+                sdl.SDL_KEYUP => {
+                    switch (event.key.keysym.sym) {
+                        sdl.SDLK_w => {
+                            // std.debug.print("KEY W\n", .{});
+                            rManager.setScene(configScene.?) catch |err| {
+                                std.debug.print("Erro ao trocar de cena: {}\n", .{err});
+                                return;
+                            };
+                        },
+                        sdl.SDLK_s => {
+                            // std.debug.print("KEY S\n", .{});
+                            rManager.setScene(homeScene.?) catch |err| {
+                                std.debug.print("Erro ao trocar de cena: {}\n", .{err});
+                                return;
+                            };
+                        },
+                        else => {},
+                    }
+                },
                 sdl.SDL_QUIT => running = false,
                 else => {},
             }
         }
-        
-        rManager.update(delta_time);  
+
+        rManager.update(delta_time);
         rManager.render();
     }
 }
