@@ -23,7 +23,7 @@ var manager: ?SceneManager = null;
 pub fn main() !void {
     const initReusult = sdlUtil.initEmAll();
     const componentReusult = initSomeStuff();
-    if (initReusult > 0 and componentReusult > 0) {
+    if (initReusult > 0 or componentReusult > 0) {
         return;
     }
 
@@ -54,7 +54,11 @@ pub fn initSomeStuff() u2 {
         return 1;
     }
 
-    home = HomeScene.create();
+    home = HomeScene.create() catch |err| {
+        std.debug.print("Ocorreu um erro: {}\n", .{err});
+        return 1;
+    };
+
     manager = SceneManager.init(renderer.?);
 
     manager.?.setScene(Scene.init("Home", &home.?)) catch |err| {
@@ -75,18 +79,27 @@ pub fn quitEmAll() void {
 
 pub fn loop() !void {
     var rManager: SceneManager = manager.?;
-
     var event: sdl.SDL_Event = undefined;
     var running = true;
-
+    
+    // ← Adicione estas 2 linhas
+    var last_time: u64 = sdl.SDL_GetTicks64();
+    var delta_time: f32 = 0;
+    
     while (running) {
+        const current_time = sdl.SDL_GetTicks64();
+        const delta_ms = current_time - last_time;
+        last_time = current_time;
+        delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
+        
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
                 sdl.SDL_QUIT => running = false,
                 else => {},
             }
         }
-
+        
+        rManager.update(delta_time);  
         rManager.render();
     }
 }

@@ -1,8 +1,6 @@
 const std = @import("std");
 
-pub fn getCurrentTime(buffer: []u8) ![]const u8 {
-    if (buffer.len < 6) return error.BufferTooSmall;
-    
+pub fn getCurrentTime() [6]u8 {
     const timestamp = std.time.timestamp();
     const epoch_seconds = @as(u64, @intCast(timestamp));
     
@@ -14,13 +12,14 @@ pub fn getCurrentTime(buffer: []u8) ![]const u8 {
     const hours = if (hours_utc >= 3) hours_utc - 3 else hours_utc + 21;
     const minutes = @divFloor(seconds_in_day % 3600, 60);
     
-    // Formata como "HH:MM\0"
-    buffer[0] = @as(u8, @intCast(hours / 10)) + '0';
-    buffer[1] = @as(u8, @intCast(hours % 10)) + '0';
-    buffer[2] = ':';
-    buffer[3] = @as(u8, @intCast(minutes / 10)) + '0';
-    buffer[4] = @as(u8, @intCast(minutes % 10)) + '0';
-    buffer[5] = 0; // '\0'
+    // Cria array com "HH:MM"
+    var result: [6]u8 = undefined;
+    result[0] = @as(u8, @intCast(hours / 10)) + '0';
+    result[1] = @as(u8, @intCast(hours % 10)) + '0';
+    result[2] = ':';
+    result[3] = @as(u8, @intCast(minutes / 10)) + '0';
+    result[4] = @as(u8, @intCast(minutes % 10)) + '0';
+    result[5] = 0;
     
-    return buffer[0..6];
+    return result;
 }
