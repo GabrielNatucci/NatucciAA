@@ -24,19 +24,13 @@ pub const SceneManager = struct {
 
         defer sdl.SDL_FreeSurface(backgroundSurface);
 
-        return .{ .current_scene = null, .old_scene = null, .renderer = renderer, .background = backgroundTexture.?};
+        return .{ .current_scene = null, .old_scene = null, .renderer = renderer, .background = backgroundTexture.? };
     }
 
     pub fn setScene(self: *SceneManager, scene: Scene) !void {
-        // if (self.current_scene) |*current| {
-        //     current.deinit();
-        // }
-        //
-        
         std.debug.print("Trocando de Scene: {s}\n", .{scene.name});
 
         self.current_scene = scene;
-        // try self.current_scene.?.initScene();
     }
 
     pub fn update(self: *SceneManager, delta_time: f32) void {
@@ -46,10 +40,7 @@ pub const SceneManager = struct {
     }
 
     pub fn render(self: *SceneManager) void {
-        // _ = sdl.SDL_SetRenderDrawColor(self.renderer, 0, 50, 100, 255);
-        // _ = sdl.SDL_RenderClear(self.renderer);
-        
-        var dir: sdl.SDL_Rect = .{.h = 720, .w = 1280, .x = 0, .y = 0}; 
+        var dir: sdl.SDL_Rect = .{ .h = 720, .w = 1280, .x = 0, .y = 0 };
         _ = sdl.SDL_RenderCopy(self.renderer, self.background, null, &dir);
 
         if (self.current_scene) |scene| {

@@ -25,6 +25,12 @@ var homeTemplate: ?HomeScene = null;
 var configTemplate: ?ConfigScene = null;
 
 var manager: ?SceneManager = null;
+const iconsLen: c_int  = 120; 
+const buttonsHeight: c_int  = 500; 
+const aaXPos: c_int  = 70; 
+const btXPos: c_int  = 390; 
+const fileXPos: c_int  = 710; 
+const cfgXPos: c_int  = 1030; 
 
 pub fn main() !void {
     const initReusult = sdlUtil.initEmAll();
@@ -65,7 +71,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    homeTemplate = HomeScene.create() catch |err| {
+    homeTemplate = HomeScene.create(iconsLen, aaXPos, btXPos, fileXPos, cfgXPos, buttonsHeight) catch |err| {
         std.debug.print("Ocorreu um erro ao criar a HomeScene: {}\n", .{err});
         return 1;
     };
@@ -116,15 +122,7 @@ pub fn loop() !void {
             switch (event.type) {
                 sdl.SDL_KEYUP => {
                     switch (event.key.keysym.sym) {
-                        sdl.SDLK_w => {
-                            // std.debug.print("KEY W\n", .{});
-                            rManager.setScene(configScene.?) catch |err| {
-                                std.debug.print("Erro ao trocar de cena: {}\n", .{err});
-                                return;
-                            };
-                        },
-                        sdl.SDLK_s => {
-                            // std.debug.print("KEY S\n", .{});
+                        sdl.SDLK_ESCAPE => {
                             rManager.setScene(homeScene.?) catch |err| {
                                 std.debug.print("Erro ao trocar de cena: {}\n", .{err});
                                 return;
@@ -133,7 +131,24 @@ pub fn loop() !void {
                         else => {},
                     }
                 },
+                sdl.SDL_MOUSEBUTTONUP => {
+                    const mouseX = event.button.x;
+                    const mouseY = event.button.y;
+
+                    const isButtonClicked: bool = mouseY > buttonsHeight and mouseY < buttonsHeight + iconsLen;
+
+                    if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsLen) and isButtonClicked == true) {
+                        rManager.setScene(configScene.?) catch |err| {
+                            std.debug.print("Erro ao trocar de cena: {}\n", .{err});
+                            return;
+                        };
+                    }
+
+                    std.debug.print("Mouse pos X: {}, Y: {}\n", .{ mouseX, mouseY });
+                },
                 sdl.SDL_QUIT => running = false,
+
+                // rManager.
                 else => {},
             }
         }

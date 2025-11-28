@@ -7,8 +7,12 @@ const timeUtil = @import("../../util/TimeUtil.zig");
 pub const HomeScene = struct {
     fonteHorario: ?*sdl.TTF_Font,
     horario: ?[6]u8,
+    androidAutoDest: ?sdl.SDL_Rect,
+    bluetoothDest: ?sdl.SDL_Rect,
+    filesDest: ?sdl.SDL_Rect,
+    configDest: ?sdl.SDL_Rect,
 
-    pub fn create() !HomeScene {
+    pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, buttonheight: c_int) !HomeScene {
         std.debug.print("Inicializando homeScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
@@ -21,9 +25,18 @@ pub const HomeScene = struct {
             sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);
         }
 
+        const aaDest: ?sdl.SDL_Rect = .{ .x = aaXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
+        const btDest: ?sdl.SDL_Rect = .{ .x = btXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
+        const filesDest: ?sdl.SDL_Rect = .{ .x = fileXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
+        const cfgDest: ?sdl.SDL_Rect = .{ .x = cfgXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
+
         return .{
             .fonteHorario = fonte,
             .horario = null,
+            .androidAutoDest = aaDest,
+            .bluetoothDest = btDest,
+            .filesDest = filesDest,
+            .configDest = cfgDest,
         };
     }
 
@@ -33,7 +46,7 @@ pub const HomeScene = struct {
     }
 
     pub fn deinit(self: *HomeScene) void {
-        if (self.fonteHorario != null)  {
+        if (self.fonteHorario != null) {
             sdl.TTF_CloseFont(self.fonteHorario);
         }
 
@@ -43,7 +56,6 @@ pub const HomeScene = struct {
     pub fn update(self: *HomeScene, delta_time: f32) void {
         _ = delta_time;
         self.horario = timeUtil.getCurrentTime();
-
     }
 
     pub fn render(self: *HomeScene, renderer: *sdl.SDL_Renderer) void {
@@ -62,9 +74,16 @@ pub const HomeScene = struct {
         const width: c_int = textSurface.*.w;
         const height: c_int = textSurface.*.h;
 
-        var destination: sdl.SDL_Rect = .{ .x = 70, .y = 70, .w = width, .h = height };
+        var clockDest: sdl.SDL_Rect = .{ .x = 70, .y = 100, .w = width, .h = height };
 
-        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &destination);
+        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &clockDest);
+
+        _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 0);
+
+        _ = sdl.SDL_RenderDrawRect(renderer, &self.androidAutoDest.?);
+        _ = sdl.SDL_RenderDrawRect(renderer, &self.bluetoothDest.?);
+        _ = sdl.SDL_RenderDrawRect(renderer, &self.filesDest.?);
+        _ = sdl.SDL_RenderDrawRect(renderer, &self.configDest.?);
     }
 
     pub fn handleEvent(self: *HomeScene, event: sdl.SDL_Event) void {
