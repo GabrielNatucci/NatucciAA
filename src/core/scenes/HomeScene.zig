@@ -11,8 +11,9 @@ pub const HomeScene = struct {
     bluetoothDest: ?sdl.SDL_Rect,
     filesDest: ?sdl.SDL_Rect,
     configDest: ?sdl.SDL_Rect,
+    radioDest: ?sdl.SDL_Rect,
 
-    pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, buttonheight: c_int) !HomeScene {
+    pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, radXPos: c_int,  buttonheight: c_int) !HomeScene {
         std.debug.print("Inicializando homeScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
@@ -29,6 +30,7 @@ pub const HomeScene = struct {
         const btDest: ?sdl.SDL_Rect = .{ .x = btXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
         const filesDest: ?sdl.SDL_Rect = .{ .x = fileXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
         const cfgDest: ?sdl.SDL_Rect = .{ .x = cfgXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
+        const radDest: ?sdl.SDL_Rect = .{ .x = radXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
 
         return .{
             .fonteHorario = fonte,
@@ -37,6 +39,7 @@ pub const HomeScene = struct {
             .bluetoothDest = btDest,
             .filesDest = filesDest,
             .configDest = cfgDest,
+            .radioDest = radDest
         };
     }
 
@@ -84,6 +87,7 @@ pub const HomeScene = struct {
         _ = sdl.SDL_RenderDrawRect(renderer, &self.bluetoothDest.?);
         _ = sdl.SDL_RenderDrawRect(renderer, &self.filesDest.?);
         _ = sdl.SDL_RenderDrawRect(renderer, &self.configDest.?);
+        _ = sdl.SDL_RenderDrawRect(renderer, &self.radioDest.?);
     }
 
     pub fn handleEvent(self: *HomeScene, event: sdl.SDL_Event) void {

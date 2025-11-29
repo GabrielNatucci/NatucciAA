@@ -25,12 +25,13 @@ var homeTemplate: ?HomeScene = null;
 var configTemplate: ?ConfigScene = null;
 
 var manager: ?SceneManager = null;
-const iconsLen: c_int  = 120; 
-const buttonsHeight: c_int  = 500; 
-const aaXPos: c_int  = 70; 
-const btXPos: c_int  = 390; 
-const fileXPos: c_int  = 710; 
-const cfgXPos: c_int  = 1030; 
+const iconsLen: c_int = 120;
+const buttonsHeight: c_int = 500;
+const aaXPos: c_int = 70;
+const btXPos: c_int = 310;
+const fileXPos: c_int = 550;
+const radXPos: c_int = 790;
+const cfgXPos: c_int = 1030;
 
 pub fn main() !void {
     const initReusult = sdlUtil.initEmAll();
@@ -71,7 +72,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    homeTemplate = HomeScene.create(iconsLen, aaXPos, btXPos, fileXPos, cfgXPos, buttonsHeight) catch |err| {
+    homeTemplate = HomeScene.create(iconsLen, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight) catch |err| {
         std.debug.print("Ocorreu um erro ao criar a HomeScene: {}\n", .{err});
         return 1;
     };
@@ -117,6 +118,7 @@ pub fn loop() !void {
         const delta_ms = current_time - last_time;
         last_time = current_time;
         delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
+        rManager.update(delta_time);
 
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
@@ -148,12 +150,10 @@ pub fn loop() !void {
                 },
                 sdl.SDL_QUIT => running = false,
 
-                // rManager.
                 else => {},
             }
         }
 
-        rManager.update(delta_time);
         rManager.render();
         sdl.SDL_Delay(16);
     }
