@@ -24,7 +24,7 @@ pub const HomeScene = struct {
     configTexture: *sdl.SDL_Texture,
 
     pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, radXPos: c_int,  buttonheight: c_int, renderer: *sdl.SDL_Renderer) !HomeScene {
-        std.debug.print("Inicializando homeScene...\n", .{});
+        std.debug.print("\nInicializando homeScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
 

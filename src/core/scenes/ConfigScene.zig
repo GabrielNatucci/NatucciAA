@@ -8,7 +8,7 @@ pub const ConfigScene = struct {
     fonteHorario: ?*sdl.TTF_Font,
 
     pub fn create() !ConfigScene {
-        std.debug.print("Inicializando configScene...\n", .{});
+        std.debug.print("\nInicializando configScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
 
@@ -16,7 +16,7 @@ pub const ConfigScene = struct {
             std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
             return error.FonteNaoCarregada;
         } else {
-            std.debug.print("Fonte da home carregada\n", .{});
+            std.debug.print("Fonte da config carregada\n", .{});
             sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);
         }
 

@@ -25,12 +25,12 @@ var homeTemplate: ?HomeScene = null;
 var configTemplate: ?ConfigScene = null;
 
 var manager: ?SceneManager = null;
-const iconsSize: c_int = 100;
+const iconsSize: c_int = 120;
 const buttonsHeight: c_int = 500;
 const aaXPos: c_int = 70;
 const btXPos: c_int = 310;
-const fileXPos: c_int = 550;
-const radXPos: c_int = 790;
+const radXPos: c_int = 550;
+const fileXPos: c_int = 790;
 const cfgXPos: c_int = 1030;
 
 pub fn main() !void {

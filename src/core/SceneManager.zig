@@ -28,7 +28,7 @@ pub const SceneManager = struct {
     }
 
     pub fn setScene(self: *SceneManager, scene: Scene) !void {
-        std.debug.print("Trocando de Scene: {s}\n", .{scene.name});
+        std.debug.print("\nTrocando de Scene: {s}\n", .{scene.name});
 
         self.current_scene = scene;
     }
