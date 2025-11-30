@@ -72,7 +72,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    homeTemplate = HomeScene.create(iconsLen, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight) catch |err| {
+    homeTemplate = HomeScene.create(iconsLen, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight, renderer.?) catch |err| {
         std.debug.print("Ocorreu um erro ao criar a HomeScene: {}\n", .{err});
         return 1;
     };

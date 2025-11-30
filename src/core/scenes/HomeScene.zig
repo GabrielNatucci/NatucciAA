@@ -11,9 +11,10 @@ pub const HomeScene = struct {
     bluetoothDest: ?sdl.SDL_Rect,
     filesDest: ?sdl.SDL_Rect,
     configDest: ?sdl.SDL_Rect,
+    configTexture: *sdl.SDL_Texture,
     radioDest: ?sdl.SDL_Rect,
 
-    pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, radXPos: c_int,  buttonheight: c_int) !HomeScene {
+    pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, radXPos: c_int,  buttonheight: c_int, renderer: *sdl.SDL_Renderer) !HomeScene {
         std.debug.print("Inicializando homeScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
@@ -32,6 +33,12 @@ pub const HomeScene = struct {
         const cfgDest: ?sdl.SDL_Rect = .{ .x = cfgXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
         const radDest: ?sdl.SDL_Rect = .{ .x = radXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
 
+        const configSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/configIcon.png");
+
+        const cfgTexture = sdl.SDL_CreateTextureFromSurface(renderer, configSurface).?;
+
+        sdl.SDL_FreeSurface(configSurface);
+
         return .{
             .fonteHorario = fonte,
             .horario = null,
@@ -39,7 +46,8 @@ pub const HomeScene = struct {
             .bluetoothDest = btDest,
             .filesDest = filesDest,
             .configDest = cfgDest,
-            .radioDest = radDest
+            .radioDest = radDest,
+            .configTexture = cfgTexture
         };
     }
 
@@ -52,6 +60,8 @@ pub const HomeScene = struct {
         if (self.fonteHorario != null) {
             sdl.TTF_CloseFont(self.fonteHorario);
         }
+
+        sdl.SDL_DestroyTexture(self.configTexture);
 
         std.debug.print("Desligando homeScene\n", .{});
     }
@@ -86,8 +96,10 @@ pub const HomeScene = struct {
         _ = sdl.SDL_RenderDrawRect(renderer, &self.androidAutoDest.?);
         _ = sdl.SDL_RenderDrawRect(renderer, &self.bluetoothDest.?);
         _ = sdl.SDL_RenderDrawRect(renderer, &self.filesDest.?);
-        _ = sdl.SDL_RenderDrawRect(renderer, &self.configDest.?);
         _ = sdl.SDL_RenderDrawRect(renderer, &self.radioDest.?);
+
+        _ = sdl.SDL_RenderDrawRect(renderer, &self.configDest.?);
+        _ = sdl.SDL_RenderCopy(renderer, self.configTexture, null, &self.configDest.?);
     }
 
     pub fn handleEvent(self: *HomeScene, event: sdl.SDL_Event) void {
