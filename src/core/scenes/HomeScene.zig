@@ -7,12 +7,21 @@ const timeUtil = @import("../../util/TimeUtil.zig");
 pub const HomeScene = struct {
     fonteHorario: ?*sdl.TTF_Font,
     horario: ?[6]u8,
+
     androidAutoDest: ?sdl.SDL_Rect,
+    androidAutoTexture: *sdl.SDL_Texture,
+
     bluetoothDest: ?sdl.SDL_Rect,
+    bluetoothTexture: *sdl.SDL_Texture,
+
     filesDest: ?sdl.SDL_Rect,
+    filesTexture: *sdl.SDL_Texture,
+
+    radioDest: ?sdl.SDL_Rect,
+    radioTexture: *sdl.SDL_Texture,
+
     configDest: ?sdl.SDL_Rect,
     configTexture: *sdl.SDL_Texture,
-    radioDest: ?sdl.SDL_Rect,
 
     pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, radXPos: c_int,  buttonheight: c_int, renderer: *sdl.SDL_Renderer) !HomeScene {
         std.debug.print("Inicializando homeScene...\n", .{});
@@ -33,11 +42,26 @@ pub const HomeScene = struct {
         const cfgDest: ?sdl.SDL_Rect = .{ .x = cfgXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
         const radDest: ?sdl.SDL_Rect = .{ .x = radXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
 
+        // carregando textura de configuração
         const configSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/configIcon.png");
-
         const cfgTexture = sdl.SDL_CreateTextureFromSurface(renderer, configSurface).?;
-
         sdl.SDL_FreeSurface(configSurface);
+
+        const radioSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/radioIcon.png");
+        const radTexture = sdl.SDL_CreateTextureFromSurface(renderer, radioSurface).?;
+        sdl.SDL_FreeSurface(radioSurface);
+
+        const filesSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/fileIcon.png");
+        const flTexture = sdl.SDL_CreateTextureFromSurface(renderer, filesSurface).?;
+        sdl.SDL_FreeSurface(filesSurface);
+
+        const aaSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/aaIcon.png");
+        const aaTex = sdl.SDL_CreateTextureFromSurface(renderer, aaSurface).?;
+        sdl.SDL_FreeSurface(aaSurface);
+
+        const btsurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/btIcon.png");
+        const btTexture = sdl.SDL_CreateTextureFromSurface(renderer, btsurface).?;
+        sdl.SDL_FreeSurface(btsurface);
 
         return .{
             .fonteHorario = fonte,
@@ -47,7 +71,11 @@ pub const HomeScene = struct {
             .filesDest = filesDest,
             .configDest = cfgDest,
             .radioDest = radDest,
-            .configTexture = cfgTexture
+            .radioTexture = radTexture,
+            .configTexture = cfgTexture,
+            .filesTexture = flTexture,
+            .androidAutoTexture = aaTex,
+            .bluetoothTexture = btTexture
         };
     }
 
@@ -62,6 +90,10 @@ pub const HomeScene = struct {
         }
 
         sdl.SDL_DestroyTexture(self.configTexture);
+        sdl.SDL_DestroyTexture(self.radioTexture);
+        sdl.SDL_DestroyTexture(self.bluetoothTexture);
+        sdl.SDL_DestroyTexture(self.androidAutoTexture);
+        sdl.SDL_DestroyTexture(self.filesTexture);
 
         std.debug.print("Desligando homeScene\n", .{});
     }
@@ -90,15 +122,12 @@ pub const HomeScene = struct {
         var clockDest: sdl.SDL_Rect = .{ .x = 70, .y = 100, .w = width, .h = height };
 
         _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &clockDest);
+        // _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 0);
 
-        _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 0);
-
-        _ = sdl.SDL_RenderDrawRect(renderer, &self.androidAutoDest.?);
-        _ = sdl.SDL_RenderDrawRect(renderer, &self.bluetoothDest.?);
-        _ = sdl.SDL_RenderDrawRect(renderer, &self.filesDest.?);
-        _ = sdl.SDL_RenderDrawRect(renderer, &self.radioDest.?);
-
-        _ = sdl.SDL_RenderDrawRect(renderer, &self.configDest.?);
+        _ = sdl.SDL_RenderCopy(renderer, self.androidAutoTexture, null, &self.androidAutoDest.?);
+        _ = sdl.SDL_RenderCopy(renderer, self.bluetoothTexture, null, &self.bluetoothDest.?);
+        _ = sdl.SDL_RenderCopy(renderer, self.filesTexture, null, &self.filesDest.?);
+        _ = sdl.SDL_RenderCopy(renderer, self.radioTexture, null, &self.radioDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.configTexture, null, &self.configDest.?);
     }
 

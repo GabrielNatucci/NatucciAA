@@ -25,7 +25,7 @@ var homeTemplate: ?HomeScene = null;
 var configTemplate: ?ConfigScene = null;
 
 var manager: ?SceneManager = null;
-const iconsLen: c_int = 120;
+const iconsSize: c_int = 140;
 const buttonsHeight: c_int = 500;
 const aaXPos: c_int = 70;
 const btXPos: c_int = 310;
@@ -72,7 +72,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    homeTemplate = HomeScene.create(iconsLen, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight, renderer.?) catch |err| {
+    homeTemplate = HomeScene.create(iconsSize, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight, renderer.?) catch |err| {
         std.debug.print("Ocorreu um erro ao criar a HomeScene: {}\n", .{err});
         return 1;
     };
@@ -113,6 +113,8 @@ pub fn loop() !void {
     var last_time: u64 = sdl.SDL_GetTicks64();
     var delta_time: f32 = 0;
 
+    _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_SCALE_QUALITY, "2");
+
     while (running) {
         const current_time = sdl.SDL_GetTicks64();
         const delta_ms = current_time - last_time;
@@ -137,9 +139,9 @@ pub fn loop() !void {
                     const mouseX = event.button.x;
                     const mouseY = event.button.y;
 
-                    const isButtonClicked: bool = mouseY > buttonsHeight and mouseY < buttonsHeight + iconsLen;
+                    const isButtonClicked: bool = mouseY > buttonsHeight and mouseY < buttonsHeight + iconsSize;
 
-                    if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsLen) and isButtonClicked == true) {
+                    if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsSize) and isButtonClicked == true) {
                         rManager.setScene(configScene.?) catch |err| {
                             std.debug.print("Erro ao trocar de cena: {}\n", .{err});
                             return;
