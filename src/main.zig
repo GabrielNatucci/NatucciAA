@@ -25,7 +25,7 @@ var homeTemplate: ?HomeScene = null;
 var configTemplate: ?ConfigScene = null;
 
 var manager: ?SceneManager = null;
-const iconsSize: c_int = 140;
+const iconsSize: c_int = 100;
 const buttonsHeight: c_int = 500;
 const aaXPos: c_int = 70;
 const btXPos: c_int = 310;
