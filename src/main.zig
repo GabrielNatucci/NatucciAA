@@ -61,7 +61,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     }
 
-    renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED);
+    renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);
     if (renderer == null) {
         std.debug.print("Erro ao criar renderer -> {s}", .{sdl.SDL_GetError()});
         return 1;
@@ -114,6 +114,10 @@ pub fn loop() !void {
     var delta_time: f32 = 0;
 
     _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_SCALE_QUALITY, "2");
+    _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_VSYNC, "1");
+
+    var oldMili = std.time.milliTimestamp();
+    var framesCounted: u64 = 0;
 
     while (running) {
         const current_time = sdl.SDL_GetTicks64();
@@ -155,8 +159,20 @@ pub fn loop() !void {
                 else => {},
             }
         }
-
         rManager.render();
-        sdl.SDL_Delay(16);
+
+        framesCounted += 1;
+
+        const current = std.time.milliTimestamp();
+        const timeDiff = current - oldMili;
+
+        if (timeDiff >= 1000) {
+            const fps = (@as(f64, @floatFromInt(framesCounted)) * 1000.0) / @as(f64, @floatFromInt(timeDiff));
+
+            std.debug.print("FPS: {d:.0}\n", .{fps}); // sem casas decimais
+
+            oldMili = current;
+            framesCounted = 0;
+        }
     }
 }
