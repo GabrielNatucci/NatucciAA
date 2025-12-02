@@ -82,7 +82,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    configTemplate = ConfigScene.create() catch |err| {
+    configTemplate = ConfigScene.create(renderer.?) catch |err| {
         std.debug.print("Ocorreu um erro ao criar a ConfigScene: {}\n", .{err});
         return 1;
     };

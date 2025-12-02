@@ -3,14 +3,16 @@ const sdl = @import("../../sdlImport/Sdl.zig").sdl;
 const Scene = @import("Scene.zig");
 const SceneManager = @import("../SceneManager.zig");
 const timeUtil = @import("../../util/TimeUtil.zig");
+const textureUtil = @import("../../util/SDLTextureUtil.zig");
 
 pub const ConfigScene = struct {
     fonteConfig: ?*sdl.TTF_Font,
+    goBackTexture: *sdl.SDL_Texture,
 
-    pub fn create() !ConfigScene {
+    pub fn create(renderer: *sdl.SDL_Renderer) !ConfigScene {
         std.debug.print("\nInicializando configScene...\n", .{});
 
-        const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
+        const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 32);
 
         if (fonte == null) {
             std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
@@ -20,8 +22,11 @@ pub const ConfigScene = struct {
             sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);
         }
 
-        return .{
-            .fonteConfig = fonte,
+        const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
+
+        return .{ 
+            .fonteConfig = fonte, 
+            .goBackTexture = backTexture 
         };
     }
 
@@ -33,15 +38,16 @@ pub const ConfigScene = struct {
     pub fn deinit(self: *ConfigScene) void {
         std.debug.print("Desligando configScene\n", .{});
 
-        if (self.fonteConfig != null)  {
+        if (self.fonteConfig != null) {
             sdl.TTF_CloseFont(self.fonteConfig);
         }
+
+        sdl.SDL_DestroyTexture(self.goBackTexture);
     }
 
     pub fn update(self: *ConfigScene, delta_time: f32) void {
         _ = delta_time;
         _ = self;
-
     }
 
     pub fn render(self: *ConfigScene, renderer: *sdl.SDL_Renderer) void {
@@ -58,10 +64,13 @@ pub const ConfigScene = struct {
         const width: c_int = textSurface.*.w;
         const height: c_int = textSurface.*.h;
 
-        var destination: sdl.SDL_Rect = .{ .x = 70, .y = 70, .w = width, .h = height };
+        var configDest: sdl.SDL_Rect = .{ .x = 565, .y = 10, .w = width, .h = height };
 
-        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &destination);
+        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &configDest);
 
+        var backDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
+
+        _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backDest);
     }
 
     pub fn handleEvent(self: *ConfigScene, event: sdl.SDL_Event) void {
