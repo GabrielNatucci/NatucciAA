@@ -5,7 +5,7 @@ const SceneManager = @import("../SceneManager.zig");
 const timeUtil = @import("../../util/TimeUtil.zig");
 
 pub const ConfigScene = struct {
-    fonteHorario: ?*sdl.TTF_Font,
+    fonteConfig: ?*sdl.TTF_Font,
 
     pub fn create() !ConfigScene {
         std.debug.print("\nInicializando configScene...\n", .{});
@@ -21,7 +21,7 @@ pub const ConfigScene = struct {
         }
 
         return .{
-            .fonteHorario = fonte,
+            .fonteConfig = fonte,
         };
     }
 
@@ -33,20 +33,21 @@ pub const ConfigScene = struct {
     pub fn deinit(self: *ConfigScene) void {
         std.debug.print("Desligando configScene\n", .{});
 
-        if (self.fonteHorario != null)  {
-            sdl.TTF_CloseFont(self.fonteHorario);
+        if (self.fonteConfig != null)  {
+            sdl.TTF_CloseFont(self.fonteConfig);
         }
     }
 
     pub fn update(self: *ConfigScene, delta_time: f32) void {
         _ = delta_time;
         _ = self;
+
     }
 
     pub fn render(self: *ConfigScene, renderer: *sdl.SDL_Renderer) void {
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
-        const textSurface = sdl.TTF_RenderText_Blended(self.fonteHorario, "CONFIG", color);
+        const textSurface = sdl.TTF_RenderText_Blended(self.fonteConfig, "CONFIG", color);
         if (textSurface == null) return;
         defer sdl.SDL_FreeSurface(textSurface);
 
