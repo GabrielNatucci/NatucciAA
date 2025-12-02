@@ -1,9 +1,14 @@
 const std = @import("std");
 const NatucciAA = @import("NatucciAA");
 
+const dbus = @cImport({
+    @cInclude("dbus/dbus.h");
+});
+
+const sdl = @import("sdlImport/Sdl.zig").sdl;
+
 const timeUtil = @import("util/TimeUtil.zig");
 const sdlUtil = @import("util/SdlInternalUtils.zig");
-const sdl = @import("sdlImport/Sdl.zig").sdl;
 const HomeScene = @import("core/scenes/HomeScene.zig").HomeScene;
 const ConfigScene = @import("core/scenes/ConfigScene.zig").ConfigScene;
 const SceneManager = @import("core/SceneManager.zig").SceneManager;
@@ -90,6 +95,13 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
+    const conn = dbus.dbus_bus_get(dbus.DBUS_BUS_SESSION, null);
+    if (conn == null) {
+        std.debug.print("Could not open a connection\n", .{});
+        return 1;
+    }
+    defer dbus.dbus_connection_unref(conn);
+
     return 0;
 }
 
@@ -109,7 +121,6 @@ pub fn loop() !void {
     var event: sdl.SDL_Event = undefined;
     var running = true;
 
-    // ← Adicione estas 2 linhas
     var last_time: u64 = sdl.SDL_GetTicks64();
     var delta_time: f32 = 0;
 

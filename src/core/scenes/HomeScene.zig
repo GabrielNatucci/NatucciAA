@@ -3,6 +3,7 @@ const sdl = @import("../../sdlImport/Sdl.zig").sdl;
 const Scene = @import("Scene.zig");
 const SceneManager = @import("../SceneManager.zig");
 const timeUtil = @import("../../util/TimeUtil.zig");
+const textureUtil = @import("../../util/SDLTextureUtil.zig");
 
 pub const HomeScene = struct {
     fonteHorario: ?*sdl.TTF_Font,
@@ -42,26 +43,11 @@ pub const HomeScene = struct {
         const cfgDest: ?sdl.SDL_Rect = .{ .x = cfgXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
         const radDest: ?sdl.SDL_Rect = .{ .x = radXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
 
-        // carregando textura de configuração
-        const configSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/configIcon.png");
-        const cfgTexture = sdl.SDL_CreateTextureFromSurface(renderer, configSurface).?;
-        sdl.SDL_FreeSurface(configSurface);
-
-        const radioSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/radioIcon.png");
-        const radTexture = sdl.SDL_CreateTextureFromSurface(renderer, radioSurface).?;
-        sdl.SDL_FreeSurface(radioSurface);
-
-        const filesSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/fileIcon.png");
-        const flTexture = sdl.SDL_CreateTextureFromSurface(renderer, filesSurface).?;
-        sdl.SDL_FreeSurface(filesSurface);
-
-        const aaSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/aaIcon.png");
-        const aaTex = sdl.SDL_CreateTextureFromSurface(renderer, aaSurface).?;
-        sdl.SDL_FreeSurface(aaSurface);
-
-        const btsurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/btIcon.png");
-        const btTexture = sdl.SDL_CreateTextureFromSurface(renderer, btsurface).?;
-        sdl.SDL_FreeSurface(btsurface);
+        const cfgTexture = try textureUtil.loadSDLTexture(renderer, "res/images/configIcon.png");
+        const radTexture = try textureUtil.loadSDLTexture(renderer, "res/images/radioIcon.png");
+        const flTexture = try textureUtil.loadSDLTexture(renderer, "res/images/fileIcon.png");
+        const aaTexture = try textureUtil.loadSDLTexture(renderer, "res/images/aaIcon.png");
+        const btTexture = try textureUtil.loadSDLTexture(renderer, "res/images/btIcon.png");
 
         return .{
             .fonteHorario = fonte,
@@ -74,7 +60,7 @@ pub const HomeScene = struct {
             .radioTexture = radTexture,
             .configTexture = cfgTexture,
             .filesTexture = flTexture,
-            .androidAutoTexture = aaTex,
+            .androidAutoTexture = aaTexture,
             .bluetoothTexture = btTexture
         };
     }
