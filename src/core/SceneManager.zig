@@ -33,9 +33,9 @@ pub const SceneManager = struct {
         self.current_scene = scene;
     }
 
-    pub fn update(self: *SceneManager, delta_time: f32) void {
+    pub fn update(self: *SceneManager, delta_time: f32, renderer: *sdl.SDL_Renderer) void {
         if (self.current_scene) |scene| {
-            scene.update(delta_time);
+            scene.update(delta_time, renderer);
         }
     }
 

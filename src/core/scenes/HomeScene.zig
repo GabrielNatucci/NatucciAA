@@ -8,6 +8,8 @@ const textureUtil = @import("../../util/SDLTextureUtil.zig");
 pub const HomeScene = struct {
     fonteHorario: ?*sdl.TTF_Font,
     horario: ?[6]u8,
+    horarioTexture: ?*sdl.SDL_Texture,
+    horarioDest: ?sdl.SDL_Rect,
 
     androidAutoDest: ?sdl.SDL_Rect,
     androidAutoTexture: *sdl.SDL_Texture,
@@ -24,7 +26,7 @@ pub const HomeScene = struct {
     configDest: ?sdl.SDL_Rect,
     configTexture: *sdl.SDL_Texture,
 
-    pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, radXPos: c_int,  buttonheight: c_int, renderer: *sdl.SDL_Renderer) !HomeScene {
+    pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, radXPos: c_int, buttonheight: c_int, renderer: *sdl.SDL_Renderer) !HomeScene {
         std.debug.print("\nInicializando homeScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
@@ -51,6 +53,7 @@ pub const HomeScene = struct {
 
         return .{
             .fonteHorario = fonte,
+            .horarioTexture = null,
             .horario = null,
             .androidAutoDest = aaDest,
             .bluetoothDest = btDest,
@@ -61,7 +64,8 @@ pub const HomeScene = struct {
             .configTexture = cfgTexture,
             .filesTexture = flTexture,
             .androidAutoTexture = aaTexture,
-            .bluetoothTexture = btTexture
+            .bluetoothTexture = btTexture,
+            .horarioDest = null
         };
     }
 
@@ -75,6 +79,10 @@ pub const HomeScene = struct {
             sdl.TTF_CloseFont(self.fonteHorario);
         }
 
+        if (self.horarioTexture != null) {
+            sdl.SDL_DestroyTexture(self.horarioTexture);
+        }
+
         sdl.SDL_DestroyTexture(self.configTexture);
         sdl.SDL_DestroyTexture(self.radioTexture);
         sdl.SDL_DestroyTexture(self.bluetoothTexture);
@@ -84,32 +92,39 @@ pub const HomeScene = struct {
         std.debug.print("Desligando homeScene\n", .{});
     }
 
-    pub fn update(self: *HomeScene, delta_time: f32) void {
+    pub fn update(self: *HomeScene, delta_time: f32, renderer: *sdl.SDL_Renderer) void {
         _ = delta_time;
-        self.horario = timeUtil.getCurrentTime();
+        const currentTime = timeUtil.getCurrentTime();
+
+        if (self.horario == null or std.mem.eql(u8, &self.horario.?, &currentTime) == false) {
+            std.debug.print("atualizando horário\n", .{});
+            self.horario = timeUtil.getCurrentTime();
+
+            if (self.horarioTexture != null) {
+                sdl.SDL_DestroyTexture(self.horarioTexture);
+            }
+
+            const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+            const textSurface = sdl.TTF_RenderText_Blended(self.fonteHorario, &self.horario.?, color);
+            defer sdl.SDL_FreeSurface(textSurface);
+
+            if (textSurface == null) {
+                std.debug.print("Erro ao criar surface de fonte: {s}\n", .{sdl.TTF_GetError()});
+                return;
+            }
+
+            const width: c_int = textSurface.*.w;
+            const height: c_int = textSurface.*.h;
+
+            self.horarioDest = .{ .x = 70, .y = 100, .w = width, .h = height };
+            self.horarioTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
+        }
     }
 
     pub fn render(self: *HomeScene, renderer: *sdl.SDL_Renderer) void {
         if (self.horario == null) return;
 
-        const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
-
-        const textSurface = sdl.TTF_RenderText_Blended(self.fonteHorario, &self.horario.?, color);
-        if (textSurface == null) return;
-        defer sdl.SDL_FreeSurface(textSurface);
-
-        const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
-        if (textTexture == null) return;
-        defer sdl.SDL_DestroyTexture(textTexture);
-
-        const width: c_int = textSurface.*.w;
-        const height: c_int = textSurface.*.h;
-
-        var clockDest: sdl.SDL_Rect = .{ .x = 70, .y = 100, .w = width, .h = height };
-
-        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &clockDest);
-        // _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 0);
-
+        _ = sdl.SDL_RenderCopy(renderer, self.horarioTexture, null, &self.horarioDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.androidAutoTexture, null, &self.androidAutoDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.bluetoothTexture, null, &self.bluetoothDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.filesTexture, null, &self.filesDest.?);

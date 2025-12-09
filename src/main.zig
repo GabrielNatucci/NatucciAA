@@ -135,7 +135,7 @@ pub fn loop() !void {
         const delta_ms = current_time - last_time;
         last_time = current_time;
         delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
-        rManager.update(delta_time);
+        rManager.update(delta_time, renderer.?);
 
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
