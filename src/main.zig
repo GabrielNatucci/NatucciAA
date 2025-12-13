@@ -1,10 +1,6 @@
 const std = @import("std");
 const NatucciAA = @import("NatucciAA");
 
-const dbus = @cImport({
-    @cInclude("dbus/dbus.h");
-});
-
 const sdl = @import("sdlImport/Sdl.zig").sdl;
 
 const timeUtil = @import("util/TimeUtil.zig");
@@ -14,6 +10,7 @@ const ConfigScene = @import("core/scenes/ConfigScene.zig").ConfigScene;
 const SceneManager = @import("core/SceneManager.zig").SceneManager;
 const Scene = @import("core/scenes/Scene.zig").Scene;
 const bt = @import("core/bluetooth/BluetoothManager.zig");
+const dbus = @import("core/dbus/dbus.zig");
 
 var renderer: ?*sdl.SDL_Renderer = null;
 var window: ?*sdl.SDL_Window = null;
@@ -31,6 +28,10 @@ var homeTemplate: ?HomeScene = null;
 var configTemplate: ?ConfigScene = null;
 
 var sceneManager: ?SceneManager = null;
+
+var dbusImpl: ?dbus.DBus = null;
+var btManager: ?bt.BluetoothManager = null;
+
 const iconsSize: c_int = 120;
 const buttonsHeight: c_int = 500;
 const aaXPos: c_int = 70;
@@ -96,13 +97,12 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    const conn = dbus.dbus_bus_get(dbus.DBUS_BUS_SESSION, null);
-    if (conn == null) {
-        std.debug.print("Não foi possível abrir conexão dbus\n", .{});
+    dbusImpl = dbus.DBus.init() catch |err| {
+        std.debug.print("Erro ao iniciar dbus: {}\n", .{err});
         return 1;
-    }
-    defer dbus.dbus_connection_unref(conn);
+    };
 
+    btManager = bt.BluetoothManager.init(&dbusImpl.?);
     return 0;
 }
 
@@ -114,6 +114,7 @@ pub fn quitEmAll() void {
     homeScene.?.deinit();
     configScene.?.deinit();
     sceneManager.?.deinit();
+    dbusImpl.?.deinit();
     // bt.BluetoothManager.deinit();
 }
 
