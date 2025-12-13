@@ -13,6 +13,7 @@ const HomeScene = @import("core/scenes/HomeScene.zig").HomeScene;
 const ConfigScene = @import("core/scenes/ConfigScene.zig").ConfigScene;
 const SceneManager = @import("core/SceneManager.zig").SceneManager;
 const Scene = @import("core/scenes/Scene.zig").Scene;
+const bt = @import("core/bluetooth/BluetoothManager.zig");
 
 var renderer: ?*sdl.SDL_Renderer = null;
 var window: ?*sdl.SDL_Window = null;
@@ -29,7 +30,7 @@ var configScene: ?Scene = null;
 var homeTemplate: ?HomeScene = null;
 var configTemplate: ?ConfigScene = null;
 
-var manager: ?SceneManager = null;
+var sceneManager: ?SceneManager = null;
 const iconsSize: c_int = 120;
 const buttonsHeight: c_int = 500;
 const aaXPos: c_int = 70;
@@ -72,7 +73,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     }
 
-    manager = SceneManager.init(renderer.?) catch |err| {
+    sceneManager = SceneManager.init(renderer.?) catch |err| {
         std.debug.print("Erro ao iniciar o SceneManager: {}", .{err});
         return 1;
     };
@@ -90,14 +91,14 @@ pub fn initSomeStuff() u2 {
     homeScene = Scene.init("Home", &homeTemplate.?);
     configScene = Scene.init("Config", &configTemplate.?);
 
-    manager.?.setScene(homeScene.?) catch |err| {
+    sceneManager.?.setScene(homeScene.?) catch |err| {
         std.debug.print("Erro ao trocar scene: {}\n", .{err});
         return 1;
     };
 
     const conn = dbus.dbus_bus_get(dbus.DBUS_BUS_SESSION, null);
     if (conn == null) {
-        std.debug.print("Could not open a connection\n", .{});
+        std.debug.print("Não foi possível abrir conexão dbus\n", .{});
         return 1;
     }
     defer dbus.dbus_connection_unref(conn);
@@ -112,12 +113,12 @@ pub fn quitEmAll() void {
 
     homeScene.?.deinit();
     configScene.?.deinit();
-
-    manager.?.deinit();
+    sceneManager.?.deinit();
+    // bt.BluetoothManager.deinit();
 }
 
 pub fn loop() !void {
-    var rManager: SceneManager = manager.?;
+    var rManager: SceneManager = sceneManager.?;
     var event: sdl.SDL_Event = undefined;
     var running = true;
 

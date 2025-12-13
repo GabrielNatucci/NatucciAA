@@ -51,22 +51,7 @@ pub const HomeScene = struct {
         const aaTexture = try textureUtil.loadSDLTexture(renderer, "res/images/aaIcon.png");
         const btTexture = try textureUtil.loadSDLTexture(renderer, "res/images/btIcon.png");
 
-        return .{
-            .fonteHorario = fonte,
-            .horarioTexture = null,
-            .horario = null,
-            .androidAutoDest = aaDest,
-            .bluetoothDest = btDest,
-            .filesDest = filesDest,
-            .configDest = cfgDest,
-            .radioDest = radDest,
-            .radioTexture = radTexture,
-            .configTexture = cfgTexture,
-            .filesTexture = flTexture,
-            .androidAutoTexture = aaTexture,
-            .bluetoothTexture = btTexture,
-            .horarioDest = null
-        };
+        return .{ .fonteHorario = fonte, .horarioTexture = null, .horario = null, .androidAutoDest = aaDest, .bluetoothDest = btDest, .filesDest = filesDest, .configDest = cfgDest, .radioDest = radDest, .radioTexture = radTexture, .configTexture = cfgTexture, .filesTexture = flTexture, .androidAutoTexture = aaTexture, .bluetoothTexture = btTexture, .horarioDest = null };
     }
 
     pub fn init(self: *HomeScene) !void {
@@ -122,8 +107,6 @@ pub const HomeScene = struct {
     }
 
     pub fn render(self: *HomeScene, renderer: *sdl.SDL_Renderer) void {
-        if (self.horario == null) return;
-
         _ = sdl.SDL_RenderCopy(renderer, self.horarioTexture, null, &self.horarioDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.androidAutoTexture, null, &self.androidAutoDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.bluetoothTexture, null, &self.bluetoothDest.?);
