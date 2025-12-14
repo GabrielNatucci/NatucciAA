@@ -1,25 +1,21 @@
 const std = @import("std");
+const ArrayList = std.array_list.Managed;
 
 pub const Device = struct {
-    name: []const u8,
-    address: []const u8,
-    rssi: ?i16,
+    name: ArrayList(u8),
+    address: ArrayList(u8),
+    rssi: i16,
 
-    pub fn init(
-        name: []const u8,
-        address: []const u8,
-        rssi: ?i16,
-        allocator: std.mem.Allocator,
-    ) !Device {
+    pub fn init(name: ArrayList(u8), address: ArrayList(u8), rssi: i16) Device {
         return .{
-            .name = try allocator.dupe(u8, name),
-            .address = try allocator.dupe(u8, address),
+            .name = name,
+            .address = address,
             .rssi = rssi,
         };
     }
 
-    pub fn deinit(self: *Device, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
-        allocator.free(self.address);
+    pub fn deinit(self: Device) void {
+        self.name.deinit();
+        self.address.deinit();
     }
 };

@@ -1,6 +1,8 @@
 const DBus = @import("../dbus/dbus.zig").DBus;
 const c = @import("../../sdlImport/Sdl.zig").dbus;
 const std = @import("std");
+const Device = @import("./Device.zig").Device;
+const ArrayList = std.array_list.Managed;
 
 // ============================================================================
 // BluetoothManager - Gerenciador específico de Bluetooth
@@ -9,12 +11,14 @@ pub const BluetoothManager = struct {
     dbus: *DBus,
     discovery: bool,
     adapter_path: [*c]const u8,
+    allocator: std.mem.Allocator,
 
-    pub fn init(dbus: *DBus) BluetoothManager {
+    pub fn init(dbus: *DBus, allocator: std.mem.Allocator) BluetoothManager {
         return BluetoothManager{
             .dbus = dbus,
             .adapter_path = "/org/bluez/hci0",
             .discovery = false,
+            .allocator = allocator,
         };
     }
 
@@ -62,8 +66,6 @@ pub const BluetoothManager = struct {
     }
 
     fn parseDevices(self: *BluetoothManager, iter: *c.DBusMessageIter) !void {
-        _ = self;
-
         var array_iter: c.DBusMessageIter = undefined;
         c.dbus_message_iter_recurse(iter, &array_iter);
 
@@ -93,7 +95,11 @@ pub const BluetoothManager = struct {
                     const iface_str = std.mem.span(iface_name);
                     if (std.mem.eql(u8, iface_str, "org.bluez.Device1")) {
                         _ = c.dbus_message_iter_next(&iface_dict);
-                        try parseDeviceProperties(&iface_dict);
+                        const dev = try parseDeviceProperties(self, &iface_dict);
+
+                        if (dev != null) {
+                            dev.?.deinit();
+                        }
                     }
 
                     _ = c.dbus_message_iter_next(&iface_array);
@@ -105,10 +111,7 @@ pub const BluetoothManager = struct {
     }
 };
 
-// ============================================================================
-// Funções auxiliares
-// ============================================================================
-fn parseDeviceProperties(iter: *c.DBusMessageIter) !void {
+fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?Device {
     var prop_array: c.DBusMessageIter = undefined;
     c.dbus_message_iter_recurse(iter, &prop_array);
 
@@ -146,7 +149,21 @@ fn parseDeviceProperties(iter: *c.DBusMessageIter) !void {
         _ = c.dbus_message_iter_next(&prop_array);
     }
 
-    if (name) |n| std.debug.print("  Nome: {s}\n", .{n});
-    if (address) |a| std.debug.print("  Endereço: {s}\n", .{a});
-    if (rssi) |r| std.debug.print("  RSSI: {d} dBm\n", .{r});
+    if (name != null and address != null and rssi != null) {
+        var nomeCopy = ArrayList(u8).init(self.allocator);
+        try nomeCopy.ensureTotalCapacity(name.?.len);
+        try nomeCopy.appendSlice(name.?);
+
+        var addressCopy = ArrayList(u8).init(self.allocator);
+        try nomeCopy.ensureTotalCapacity(address.?.len);
+        try addressCopy.appendSlice(address.?);
+
+        return Device.init(nomeCopy, addressCopy, rssi.?);
+    } else {
+        return null;
+    }
+
+    // if (name) |n| std.debug.print("  Nome: {s}\n", .{n});
+    // if (address) |a| std.debug.print("  Endereço: {s}\n", .{a});
+    // if (rssi) |r| std.debug.print("  RSSI: {d} dBm\n", .{r});
 }

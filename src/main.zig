@@ -1,6 +1,5 @@
 const std = @import("std");
 const NatucciAA = @import("NatucciAA");
-
 const sdl = @import("sdlImport/Sdl.zig").sdl;
 
 const timeUtil = @import("util/TimeUtil.zig");
@@ -17,6 +16,7 @@ const dbus = @import("core/dbus/dbus.zig");
 var renderer: ?*sdl.SDL_Renderer = null;
 var window: ?*sdl.SDL_Window = null;
 var fenixFont: ?*sdl.TTF_Font = null;
+var allocator = std.heap.GeneralPurposeAllocator(.{}){};
 
 const alloc = std.heap.c_allocator;
 
@@ -98,7 +98,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    btManager = bt.BluetoothManager.init(&dbusImpl.?);
+    btManager = bt.BluetoothManager.init(&dbusImpl.?, allocator.allocator());
     btTemplate = BluetoothScene.create(renderer.?, &btManager.?) catch |err| {
         std.debug.print("Ocorreu um erro ao criar a BluetoothScene: {}\n", .{err});
         return 1;
@@ -124,6 +124,7 @@ pub fn quitEmAll() void {
     homeScene.?.deinit();
     configScene.?.deinit();
     sceneManager.?.deinit();
+    _ = allocator.deinit();
     // dbusImpl.?.deinit();
     // bt.BluetoothManager.deinit();
 }
@@ -204,7 +205,7 @@ pub fn loop() !void {
 
         if (timeDiff >= 1000) {
             const fps = (@as(f64, @floatFromInt(framesCounted)) * 1000.0) / @as(f64, @floatFromInt(timeDiff));
-            std.debug.print("FPS: {d:.0}\n", .{fps}); 
+            std.debug.print("FPS: {d:.0}\n", .{fps});
 
             oldMili = current;
             framesCounted = 0;
