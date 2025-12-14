@@ -124,9 +124,9 @@ pub fn quitEmAll() void {
     homeScene.?.deinit();
     configScene.?.deinit();
     sceneManager.?.deinit();
+    btManager.?.deinit();
+
     _ = allocator.deinit();
-    // dbusImpl.?.deinit();
-    // bt.BluetoothManager.deinit();
 }
 
 pub fn loop() !void {
@@ -205,7 +205,7 @@ pub fn loop() !void {
 
         if (timeDiff >= 1000) {
             const fps = (@as(f64, @floatFromInt(framesCounted)) * 1000.0) / @as(f64, @floatFromInt(timeDiff));
-            std.debug.print("FPS: {d:.0}\n", .{fps});
+            _ = fps;
 
             oldMili = current;
             framesCounted = 0;

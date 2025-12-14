@@ -12,13 +12,17 @@ pub const BluetoothManager = struct {
     discovery: bool,
     adapter_path: [*c]const u8,
     allocator: std.mem.Allocator,
+    devices: std.array_list.Managed(Device),
 
     pub fn init(dbus: *DBus, allocator: std.mem.Allocator) BluetoothManager {
+        const devices = ArrayList(Device).init(allocator);
+
         return BluetoothManager{
             .dbus = dbus,
             .adapter_path = "/org/bluez/hci0",
             .discovery = false,
             .allocator = allocator,
+            .devices = devices,
         };
     }
 
@@ -59,8 +63,7 @@ pub const BluetoothManager = struct {
             return;
         }
 
-        std.debug.print("Dispositivos encontrados:\n", .{});
-        std.debug.print("========================\n", .{});
+        self.deinitDevices();
 
         try self.parseDevices(&iter);
     }
@@ -68,6 +71,8 @@ pub const BluetoothManager = struct {
     fn parseDevices(self: *BluetoothManager, iter: *c.DBusMessageIter) !void {
         var array_iter: c.DBusMessageIter = undefined;
         c.dbus_message_iter_recurse(iter, &array_iter);
+
+        self.devices = ArrayList(Device).init(self.allocator);
 
         while (c.dbus_message_iter_get_arg_type(&array_iter) != c.DBUS_TYPE_INVALID) {
             var dict_iter: c.DBusMessageIter = undefined;
@@ -78,8 +83,6 @@ pub const BluetoothManager = struct {
 
             const path_str = std.mem.span(path);
             if (std.mem.indexOf(u8, path_str, "/dev_") != null) {
-                std.debug.print("\nDispositivo: {s}\n", .{path_str});
-
                 _ = c.dbus_message_iter_next(&dict_iter);
 
                 var iface_array: c.DBusMessageIter = undefined;
@@ -95,10 +98,11 @@ pub const BluetoothManager = struct {
                     const iface_str = std.mem.span(iface_name);
                     if (std.mem.eql(u8, iface_str, "org.bluez.Device1")) {
                         _ = c.dbus_message_iter_next(&iface_dict);
+
                         const dev = try parseDeviceProperties(self, &iface_dict);
 
                         if (dev != null) {
-                            dev.?.deinit();
+                            try self.devices.append(dev.?);
                         }
                     }
 
@@ -108,6 +112,18 @@ pub const BluetoothManager = struct {
 
             _ = c.dbus_message_iter_next(&array_iter);
         }
+    }
+
+    pub fn deinit(self: BluetoothManager) void {
+        self.deinitDevices();
+    }
+
+    pub fn deinitDevices(self: BluetoothManager) void {
+        for (self.devices.items) |current| {
+            current.deinit();
+        }
+
+        self.devices.deinit();
     }
 };
 

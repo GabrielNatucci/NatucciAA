@@ -69,6 +69,16 @@ pub const BluetoothScene = struct {
                 std.debug.print("Erro ao ListDevices: {}\n", .{err});
                 return;
             };
+
+            if (self.btManager.devices.items.len >= 0) {
+                std.debug.print("\n===================================\n", .{});
+                std.debug.print("=====Dispositivos encontrados:=====\n", .{});
+                std.debug.print("===================================\n", .{});
+                for (self.btManager.devices.items) |value| {
+                    std.debug.print("Nome?: {s}\n", .{value.name.items});
+                }
+                std.debug.print("\n", .{});
+            }
         }
     }
 
