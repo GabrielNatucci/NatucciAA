@@ -51,7 +51,22 @@ pub const HomeScene = struct {
         const aaTexture = try textureUtil.loadSDLTexture(renderer, "res/images/aaIcon.png");
         const btTexture = try textureUtil.loadSDLTexture(renderer, "res/images/btIcon.png");
 
-        return .{ .fonteHorario = fonte, .horarioTexture = null, .horario = null, .androidAutoDest = aaDest, .bluetoothDest = btDest, .filesDest = filesDest, .configDest = cfgDest, .radioDest = radDest, .radioTexture = radTexture, .configTexture = cfgTexture, .filesTexture = flTexture, .androidAutoTexture = aaTexture, .bluetoothTexture = btTexture, .horarioDest = null };
+        return .{
+            .fonteHorario = fonte,
+            .horarioTexture = null,
+            .horario = null,
+            .androidAutoDest = aaDest,
+            .bluetoothDest = btDest,
+            .filesDest = filesDest,
+            .configDest = cfgDest,
+            .radioDest = radDest,
+            .radioTexture = radTexture,
+            .configTexture = cfgTexture,
+            .filesTexture = flTexture,
+            .androidAutoTexture = aaTexture,
+            .bluetoothTexture = btTexture,
+            .horarioDest = null,
+        };
     }
 
     pub fn init(self: *HomeScene) !void {

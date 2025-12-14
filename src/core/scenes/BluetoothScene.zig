@@ -53,6 +53,11 @@ pub const BluetoothScene = struct {
             std.debug.print("Erro ao startDiscovery: {}\n", .{err});
             return;
         };
+
+        self.btManager.listDevices() catch |err| {
+            std.debug.print("Erro ao ListDevices: {}\n", .{err});
+            return;
+        };
     }
 
     pub fn render(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {

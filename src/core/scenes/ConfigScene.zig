@@ -24,7 +24,10 @@ pub const ConfigScene = struct {
 
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
 
-        return .{ .fonteConfig = fonte, .goBackTexture = backTexture };
+        return .{
+            .fonteConfig = fonte,
+            .goBackTexture = backTexture,
+        };
     }
 
     pub fn init(self: *ConfigScene) !void {

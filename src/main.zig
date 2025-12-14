@@ -174,7 +174,7 @@ pub fn loop() !void {
 
                     if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsSize) and isButtonHeight == true) {
                         scene = configScene;
-                    } else if (mouseX > btXPos and mouseX < (btXPos + iconsSize) and isButtonHeight == true){
+                    } else if (mouseX > btXPos and mouseX < (btXPos + iconsSize) and isButtonHeight == true) {
                         scene = btScene;
                     }
 
@@ -192,6 +192,7 @@ pub fn loop() !void {
                 else => {},
             }
         }
+
         rManager.render();
 
         framesCounted += 1;
@@ -202,7 +203,7 @@ pub fn loop() !void {
         if (timeDiff >= 1000) {
             const fps = (@as(f64, @floatFromInt(framesCounted)) * 1000.0) / @as(f64, @floatFromInt(timeDiff));
 
-            std.debug.print("FPS: {d:.0}\n", .{fps}); // sem casas decimais
+            std.debug.print("FPS: {d:.0}\n", .{fps}); 
 
             oldMili = current;
             framesCounted = 0;
