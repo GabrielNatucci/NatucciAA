@@ -10,7 +10,7 @@ pub const Scene = struct {
     const VTable = struct {
         init: *const fn (*anyopaque) anyerror!void, // Está correto
         deinit: *const fn (*anyopaque) void,
-        update: *const fn (*anyopaque, f32, *sdl.SDL_Renderer) void,
+        update: *const fn (*anyopaque, f32, *sdl.SDL_Renderer, active: bool) void,
         render: *const fn (*anyopaque, *sdl.SDL_Renderer) void,
     };
 
@@ -28,9 +28,9 @@ pub const Scene = struct {
                 self.deinit();
             }
 
-            fn update(ptr: *anyopaque, delta_time: f32, renderer: *sdl.SDL_Renderer) void {
+            fn update(ptr: *anyopaque, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
                 const self: *T = @ptrCast(@alignCast(ptr));
-                self.update(delta_time, renderer);
+                self.update(delta_time, renderer, active);
             }
 
             fn render(ptr: *anyopaque, renderer: *sdl.SDL_Renderer) void {
@@ -61,7 +61,7 @@ pub const Scene = struct {
 
     pub fn update(self: Scene, delta_time: f32, renderer: *sdl.SDL_Renderer) void {
         if (self.active) {
-            self.vtable.update(self.ptr, delta_time, renderer);
+            self.vtable.update(self.ptr, delta_time, renderer, self.active);
         }
     }
 

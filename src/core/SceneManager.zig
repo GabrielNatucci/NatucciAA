@@ -30,7 +30,12 @@ pub const SceneManager = struct {
     pub fn setScene(self: *SceneManager, scene: Scene) !void {
         std.debug.print("\nTrocando de Scene: {s}\n", .{scene.name});
 
+        if (self.current_scene != null) {
+            self.current_scene.?.active = false;
+        }
+
         self.current_scene = scene;
+        self.current_scene.?.active = true;
     }
 
     pub fn update(self: *SceneManager, delta_time: f32, renderer: *sdl.SDL_Renderer) void {

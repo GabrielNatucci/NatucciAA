@@ -7,33 +7,41 @@ const std = @import("std");
 // ============================================================================
 pub const BluetoothManager = struct {
     dbus: *DBus,
+    discovery: bool,
     adapter_path: [*c]const u8,
 
     pub fn init(dbus: *DBus) BluetoothManager {
         return BluetoothManager{
             .dbus = dbus,
             .adapter_path = "/org/bluez/hci0",
+            .discovery = false,
         };
     }
 
     pub fn startDiscovery(self: *BluetoothManager) !void {
-        std.debug.print("Iniciando descoberta...\n", .{});
-        try self.dbus.callMethod(
-            "org.bluez",
-            self.adapter_path,
-            "org.bluez.Adapter1",
-            "StartDiscovery",
-        );
+        if (self.discovery == false) {
+            std.debug.print("Iniciando descoberta...\n", .{});
+            self.discovery = true;
+            try self.dbus.callMethod(
+                "org.bluez",
+                self.adapter_path,
+                "org.bluez.Adapter1",
+                "StartDiscovery",
+            );
+        }
     }
 
     pub fn stopDiscovery(self: *BluetoothManager) !void {
-        std.debug.print("Parando descoberta...\n", .{});
-        try self.dbus.callMethod(
-            "org.bluez",
-            self.adapter_path,
-            "org.bluez.Adapter1",
-            "StopDiscovery",
-        );
+        if (self.discovery == true) {
+            std.debug.print("Parando descoberta...\n", .{});
+            self.discovery = false;
+            try self.dbus.callMethod(
+                "org.bluez",
+                self.adapter_path,
+                "org.bluez.Adapter1",
+                "StopDiscovery",
+            );
+        }
     }
 
     pub fn listDevices(self: *BluetoothManager) !void {
@@ -55,7 +63,7 @@ pub const BluetoothManager = struct {
 
     fn parseDevices(self: *BluetoothManager, iter: *c.DBusMessageIter) !void {
         _ = self;
-        
+
         var array_iter: c.DBusMessageIter = undefined;
         c.dbus_message_iter_recurse(iter, &array_iter);
 

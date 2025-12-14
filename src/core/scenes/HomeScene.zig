@@ -77,8 +77,9 @@ pub const HomeScene = struct {
         std.debug.print("Desligando homeScene\n", .{});
     }
 
-    pub fn update(self: *HomeScene, delta_time: f32, renderer: *sdl.SDL_Renderer) void {
+    pub fn update(self: *HomeScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
         _ = delta_time;
+        _ = active;
         const currentTime = timeUtil.getCurrentTime();
 
         if (self.horario == null or std.mem.eql(u8, &self.horario.?, &currentTime) == false) {

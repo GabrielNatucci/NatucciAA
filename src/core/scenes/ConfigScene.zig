@@ -45,10 +45,11 @@ pub const ConfigScene = struct {
         sdl.SDL_DestroyTexture(self.goBackTexture);
     }
 
-    pub fn update(self: *ConfigScene, delta_time: f32, renderer: *sdl.SDL_Renderer) void {
+    pub fn update(self: *ConfigScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
         _ = delta_time;
         _ = self;
         _ = renderer;
+        _ = active;
     }
 
     pub fn render(self: *ConfigScene, renderer: *sdl.SDL_Renderer) void {

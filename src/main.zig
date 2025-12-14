@@ -83,7 +83,6 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-
     homeTemplate = HomeScene.create(iconsSize, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight, renderer.?) catch |err| {
         std.debug.print("Ocorreu um erro ao criar a HomeScene: {}\n", .{err});
         return 1;
@@ -150,6 +149,8 @@ pub fn loop() !void {
         delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
         rManager.update(delta_time, renderer.?);
 
+        btScene.?.update(delta_time, renderer.?);
+
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
                 sdl.SDL_KEYUP => {
@@ -167,10 +168,17 @@ pub fn loop() !void {
                     const mouseX = event.button.x;
                     const mouseY = event.button.y;
 
-                    const isButtonClicked: bool = mouseY > buttonsHeight and mouseY < buttonsHeight + iconsSize;
+                    const isButtonHeight: bool = mouseY > buttonsHeight and mouseY < buttonsHeight + iconsSize;
+                    var scene: ?Scene = null;
 
-                    if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsSize) and isButtonClicked == true) {
-                        rManager.setScene(configScene.?) catch |err| {
+                    if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsSize) and isButtonHeight == true) {
+                        scene = configScene;
+                    } else if (mouseX > btXPos and mouseX < (btXPos + iconsSize) and isButtonHeight == true){
+                        scene = btScene;
+                    }
+
+                    if (scene != null) {
+                        rManager.setScene(scene.?) catch |err| {
                             std.debug.print("Erro ao trocar de cena: {}\n", .{err});
                             return;
                         };
