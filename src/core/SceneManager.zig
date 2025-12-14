@@ -32,6 +32,7 @@ pub const SceneManager = struct {
 
         if (self.current_scene != null) {
             self.current_scene.?.active = false;
+            self.current_scene.?.outOfFocus();
         }
 
         self.current_scene = scene;

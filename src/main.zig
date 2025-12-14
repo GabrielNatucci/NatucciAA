@@ -142,14 +142,15 @@ pub fn loop() !void {
     var oldMili = std.time.milliTimestamp();
     var framesCounted: u64 = 0;
 
+    btScene.?.active = false;
+    configScene.?.active = false;
+
     while (running) {
         const current_time = sdl.SDL_GetTicks64();
         const delta_ms = current_time - last_time;
         last_time = current_time;
         delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
         rManager.update(delta_time, renderer.?);
-
-        btScene.?.update(delta_time, renderer.?);
 
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {

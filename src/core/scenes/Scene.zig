@@ -12,6 +12,7 @@ pub const Scene = struct {
         deinit: *const fn (*anyopaque) void,
         update: *const fn (*anyopaque, f32, *sdl.SDL_Renderer, active: bool) void,
         render: *const fn (*anyopaque, *sdl.SDL_Renderer) void,
+        outOfFocus: *const fn (*anyopaque) void,
     };
 
     pub fn init(name: []const u8, pointer: anytype) Scene {
@@ -37,6 +38,11 @@ pub const Scene = struct {
                 const self: *T = @ptrCast(@alignCast(ptr));
                 self.render(renderer);
             }
+
+            fn outOfFocus(ptr: *anyopaque) void {
+                const self: *T = @ptrCast(@alignCast(ptr));
+                self.outOfFocus();
+            }
         };
 
         return .{
@@ -48,6 +54,7 @@ pub const Scene = struct {
                 .deinit = gen.deinit,
                 .update = gen.update,
                 .render = gen.render,
+                .outOfFocus = gen.outOfFocus,
             },
         };
     }
@@ -69,6 +76,10 @@ pub const Scene = struct {
         if (self.active) {
             self.vtable.render(self.ptr, renderer);
         }
+    }
+
+    pub fn outOfFocus(self: Scene) void {
+        self.vtable.outOfFocus(self.ptr);
     }
 
     // Métodos que trabalham com as propriedades comuns

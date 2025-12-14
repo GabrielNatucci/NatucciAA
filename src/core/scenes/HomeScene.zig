@@ -129,4 +129,8 @@ pub const HomeScene = struct {
             else => {},
         }
     }
+
+    pub fn outOfFocus(self: *HomeScene) void {
+        _ = self;
+    }
 };

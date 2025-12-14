@@ -24,10 +24,7 @@ pub const ConfigScene = struct {
 
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
 
-        return .{ 
-            .fonteConfig = fonte, 
-            .goBackTexture = backTexture 
-        };
+        return .{ .fonteConfig = fonte, .goBackTexture = backTexture };
     }
 
     pub fn init(self: *ConfigScene) !void {
@@ -87,5 +84,9 @@ pub const ConfigScene = struct {
             },
             else => {},
         }
+    }
+
+    pub fn outOfFocus(self: *ConfigScene) void {
+        _ = self;
     }
 };

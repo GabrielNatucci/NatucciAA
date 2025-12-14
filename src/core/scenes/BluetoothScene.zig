@@ -47,24 +47,12 @@ pub const BluetoothScene = struct {
     pub fn update(self: *BluetoothScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
         _ = delta_time;
         _ = renderer;
+        _ = active;
 
-        std.debug.print("Active?: {}\n", .{active});
-        if (active == true) {
-            self.btManager.startDiscovery() catch |err| {
-                std.debug.print("Erro ao startDiscovery: {}\n", .{err});
-                return;
-            };
-
-            // self.btManager.listDevices() catch |err| {
-            //     std.debug.print("Erro ao listar devices: {}\n", .{err});
-            //     return;
-            // };
-        } else {
-            self.btManager.stopDiscovery() catch |err| {
-                std.debug.print("Erro ao parar o discovery: {}", .{err});
-                return;
-            };
-        }
+        self.btManager.startDiscovery() catch |err| {
+            std.debug.print("Erro ao startDiscovery: {}\n", .{err});
+            return;
+        };
     }
 
     pub fn render(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
@@ -104,5 +92,12 @@ pub const BluetoothScene = struct {
             },
             else => {},
         }
+    }
+
+    pub fn outOfFocus(self: *BluetoothScene) void {
+        self.btManager.stopDiscovery() catch |err| {
+            std.debug.print("Erro ao parar o discovery: {}", .{err});
+            return;
+        };
     }
 };
