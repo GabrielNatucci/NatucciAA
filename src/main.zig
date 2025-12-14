@@ -8,6 +8,8 @@ const sdlUtil = @import("util/SdlInternalUtils.zig");
 const HomeScene = @import("core/scenes/HomeScene.zig").HomeScene;
 const ConfigScene = @import("core/scenes/ConfigScene.zig").ConfigScene;
 const SceneManager = @import("core/SceneManager.zig").SceneManager;
+const BluetoothScene = @import("core/scenes/BluetoothScene.zig").BluetoothScene;
+
 const Scene = @import("core/scenes/Scene.zig").Scene;
 const bt = @import("core/bluetooth/BluetoothManager.zig");
 const dbus = @import("core/dbus/dbus.zig");
@@ -23,11 +25,13 @@ const WIDTH: c_int = 1280;
 
 var homeScene: ?Scene = null;
 var configScene: ?Scene = null;
+var btScene: ?Scene = null;
+
+var sceneManager: ?SceneManager = null;
 
 var homeTemplate: ?HomeScene = null;
 var configTemplate: ?ConfigScene = null;
-
-var sceneManager: ?SceneManager = null;
+var btTemplate: ?BluetoothScene = null;
 
 var dbusImpl: ?dbus.DBus = null;
 var btManager: ?bt.BluetoothManager = null;
@@ -79,6 +83,7 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
+
     homeTemplate = HomeScene.create(iconsSize, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight, renderer.?) catch |err| {
         std.debug.print("Ocorreu um erro ao criar a HomeScene: {}\n", .{err});
         return 1;
@@ -89,20 +94,26 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
-    homeScene = Scene.init("Home", &homeTemplate.?);
-    configScene = Scene.init("Config", &configTemplate.?);
-
-    sceneManager.?.setScene(homeScene.?) catch |err| {
-        std.debug.print("Erro ao trocar scene: {}\n", .{err});
-        return 1;
-    };
-
     dbusImpl = dbus.DBus.init() catch |err| {
         std.debug.print("Erro ao iniciar dbus: {}\n", .{err});
         return 1;
     };
 
     btManager = bt.BluetoothManager.init(&dbusImpl.?);
+    btTemplate = BluetoothScene.create(renderer.?, &btManager.?) catch |err| {
+        std.debug.print("Ocorreu um erro ao criar a BluetoothScene: {}\n", .{err});
+        return 1;
+    };
+
+    homeScene = Scene.init("Home", &homeTemplate.?);
+    configScene = Scene.init("Config", &configTemplate.?);
+    btScene = Scene.init("Config", &btTemplate.?);
+
+    sceneManager.?.setScene(homeScene.?) catch |err| {
+        std.debug.print("Erro ao trocar scene: {}\n", .{err});
+        return 1;
+    };
+
     return 0;
 }
 
@@ -114,7 +125,7 @@ pub fn quitEmAll() void {
     homeScene.?.deinit();
     configScene.?.deinit();
     sceneManager.?.deinit();
-    dbusImpl.?.deinit();
+    // dbusImpl.?.deinit();
     // bt.BluetoothManager.deinit();
 }
 
