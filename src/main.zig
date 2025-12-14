@@ -149,7 +149,9 @@ pub fn loop() !void {
         const current_time = sdl.SDL_GetTicks64();
         const delta_ms = current_time - last_time;
         last_time = current_time;
+
         delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
+
         rManager.update(delta_time, renderer.?);
 
         while (sdl.SDL_PollEvent(&event) != 0) {
@@ -202,7 +204,6 @@ pub fn loop() !void {
 
         if (timeDiff >= 1000) {
             const fps = (@as(f64, @floatFromInt(framesCounted)) * 1000.0) / @as(f64, @floatFromInt(timeDiff));
-
             std.debug.print("FPS: {d:.0}\n", .{fps}); 
 
             oldMili = current;

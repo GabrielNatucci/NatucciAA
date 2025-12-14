@@ -10,6 +10,7 @@ pub const BluetoothScene = struct {
     fonteBluetooth: ?*sdl.TTF_Font,
     goBackTexture: *sdl.SDL_Texture,
     btManager: *bt.BluetoothManager,
+    lastTimeSeconds: f32,
 
     pub fn create(renderer: *sdl.SDL_Renderer, bluetooth: *bt.BluetoothManager) !BluetoothScene {
         std.debug.print("\nInicializando bluetoothScene...\n", .{});
@@ -26,7 +27,12 @@ pub const BluetoothScene = struct {
 
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
 
-        return .{ .fonteBluetooth = fonte, .goBackTexture = backTexture, .btManager = bluetooth };
+        return .{
+            .fonteBluetooth = fonte,
+            .goBackTexture = backTexture,
+            .btManager = bluetooth,
+            .lastTimeSeconds = 0,
+        };
     }
 
     pub fn init(self: *BluetoothScene) !void {
@@ -45,19 +51,25 @@ pub const BluetoothScene = struct {
     }
 
     pub fn update(self: *BluetoothScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
-        _ = delta_time;
         _ = renderer;
         _ = active;
+        self.lastTimeSeconds += delta_time;
 
         self.btManager.startDiscovery() catch |err| {
             std.debug.print("Erro ao startDiscovery: {}\n", .{err});
             return;
         };
 
-        self.btManager.listDevices() catch |err| {
-            std.debug.print("Erro ao ListDevices: {}\n", .{err});
-            return;
-        };
+        // para listar os dispositivos a cada dois segundos..
+        // sem isso aqui dá merda!!
+        if (self.lastTimeSeconds >= 2.0) {
+            self.lastTimeSeconds = 0;
+
+            self.btManager.listDevices() catch |err| {
+                std.debug.print("Erro ao ListDevices: {}\n", .{err});
+                return;
+            };
+        }
     }
 
     pub fn render(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
