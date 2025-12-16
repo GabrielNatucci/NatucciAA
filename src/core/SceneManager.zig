@@ -37,6 +37,7 @@ pub const SceneManager = struct {
 
         self.current_scene = scene;
         self.current_scene.?.active = true;
+        self.current_scene.?.inOfFocus();
     }
 
     pub fn update(self: *SceneManager, delta_time: f32, renderer: *sdl.SDL_Renderer) void {

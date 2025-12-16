@@ -92,4 +92,9 @@ pub const ConfigScene = struct {
     pub fn outOfFocus(self: *ConfigScene) void {
         _ = self;
     }
+
+    pub fn inOfFocus(self: *ConfigScene) void {
+
+        _ = self;
+    }
 };

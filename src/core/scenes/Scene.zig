@@ -13,15 +13,16 @@ pub const Scene = struct {
         update: *const fn (*anyopaque, f32, *sdl.SDL_Renderer, active: bool) void,
         render: *const fn (*anyopaque, *sdl.SDL_Renderer) void,
         outOfFocus: *const fn (*anyopaque) void,
+        inOfFocus: *const fn (*anyopaque) void,
     };
 
     pub fn init(name: []const u8, pointer: anytype) Scene {
         const T = @TypeOf(pointer.*);
 
         const gen = struct {
-            fn init(ptr: *anyopaque) anyerror!void { // ← Adicione anyerror!
+            fn init(ptr: *anyopaque) anyerror!void { 
                 const self: *T = @ptrCast(@alignCast(ptr));
-                return self.init(); // Precisa retornar o erro
+                return self.init(); 
             }
 
             fn deinit(ptr: *anyopaque) void {
@@ -43,6 +44,11 @@ pub const Scene = struct {
                 const self: *T = @ptrCast(@alignCast(ptr));
                 self.outOfFocus();
             }
+
+            fn inOfFocus(ptr: *anyopaque) void {
+                const self: *T = @ptrCast(@alignCast(ptr));
+                self.inOfFocus();
+            }
         };
 
         return .{
@@ -55,6 +61,7 @@ pub const Scene = struct {
                 .update = gen.update,
                 .render = gen.render,
                 .outOfFocus = gen.outOfFocus,
+                .inOfFocus = gen.inOfFocus,
             },
         };
     }
@@ -82,7 +89,10 @@ pub const Scene = struct {
         self.vtable.outOfFocus(self.ptr);
     }
 
-    // Métodos que trabalham com as propriedades comuns
+    pub fn inOfFocus(self: Scene) void {
+        self.vtable.inOfFocus(self.ptr);
+    }
+
     pub fn setActive(self: *Scene, active: bool) void {
         self.active = active;
         std.debug.print("Scene '{s}' agora está: {s}\n", .{ self.name, if (active) "ATIVA" else "INATIVA" });

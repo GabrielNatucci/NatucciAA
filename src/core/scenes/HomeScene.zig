@@ -148,4 +148,8 @@ pub const HomeScene = struct {
     pub fn outOfFocus(self: *HomeScene) void {
         _ = self;
     }
+
+    pub fn inOfFocus(self: *HomeScene) void {
+        _ = self;
+    }
 };

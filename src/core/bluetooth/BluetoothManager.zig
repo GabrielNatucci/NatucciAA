@@ -167,12 +167,12 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
 
     if (name != null and address != null and rssi != null) {
         var nomeCopy = ArrayList(u8).init(self.allocator);
-        try nomeCopy.ensureTotalCapacity(name.?.len);
         try nomeCopy.appendSlice(name.?);
+        try nomeCopy.append(0);
 
         var addressCopy = ArrayList(u8).init(self.allocator);
-        try nomeCopy.ensureTotalCapacity(address.?.len);
         try addressCopy.appendSlice(address.?);
+        try addressCopy.append(0);
 
         return Device.init(nomeCopy, addressCopy, rssi.?);
     } else {

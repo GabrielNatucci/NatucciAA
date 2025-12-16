@@ -55,11 +55,10 @@ pub const BluetoothScene = struct {
         _ = active;
         self.lastTimeSeconds += delta_time;
 
-        self.btManager.startDiscovery() catch |err| {
-            std.debug.print("Erro ao startDiscovery: {}\n", .{err});
-            return;
-        };
+        self.listarDispositivos();
+    }
 
+    pub fn listarDispositivos(self: *BluetoothScene) void {
         // para listar os dispositivos a cada dois segundos..
         // sem isso aqui dá merda!!
         if (self.lastTimeSeconds >= 2.0) {
@@ -69,20 +68,41 @@ pub const BluetoothScene = struct {
                 std.debug.print("Erro ao ListDevices: {}\n", .{err});
                 return;
             };
-
-            if (self.btManager.devices.items.len >= 0) {
-                std.debug.print("\n===================================\n", .{});
-                std.debug.print("=====Dispositivos encontrados:=====\n", .{});
-                std.debug.print("===================================\n", .{});
-                for (self.btManager.devices.items) |value| {
-                    std.debug.print("Nome?: {s}\n", .{value.name.items});
-                }
-                std.debug.print("\n", .{});
-            }
         }
     }
 
     pub fn render(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
+        var testando: u16 = 200;
+
+        if (self.btManager.devices.items.len >= 0) {
+            for (self.btManager.devices.items) |value| {
+                const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+                const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, value.name.items.ptr, color);
+
+                if (textSurface == null) return;
+                defer sdl.SDL_FreeSurface(textSurface);
+
+                const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
+                if (textTexture == null) return;
+                defer sdl.SDL_DestroyTexture(textTexture);
+
+                const width: c_int = textSurface.*.w;
+                const height: c_int = textSurface.*.h;
+                const xOrigin: c_int = 355;
+
+                // std.debug.print("testando: {d}\n", .{testando});
+                var bluetoothDest: sdl.SDL_Rect = .{ .x = xOrigin, .y = testando, .w = width, .h = height };
+                _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &bluetoothDest);
+
+                _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+                var deviceDest: sdl.SDL_Rect = .{ .x = xOrigin - 15, .y = testando - 5, .w = 600, .h = textSurface.*.h + 10 };
+                _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
+
+                testando += 47;
+            }
+        }
+
         renderBoilerplate(self, renderer);
     }
 
@@ -124,6 +144,13 @@ pub const BluetoothScene = struct {
     pub fn outOfFocus(self: *BluetoothScene) void {
         self.btManager.stopDiscovery() catch |err| {
             std.debug.print("Erro ao parar o discovery: {}", .{err});
+            return;
+        };
+    }
+
+    pub fn inOfFocus(self: *BluetoothScene) void {
+        self.btManager.startDiscovery() catch |err| {
+            std.debug.print("Erro ao startDiscovery: {}\n", .{err});
             return;
         };
     }
