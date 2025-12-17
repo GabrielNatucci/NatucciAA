@@ -15,7 +15,6 @@ const dbus = @import("core/dbus/dbus.zig");
 
 var renderer: ?*sdl.SDL_Renderer = null;
 var window: ?*sdl.SDL_Window = null;
-var fenixFont: ?*sdl.TTF_Font = null;
 var allocator = std.heap.GeneralPurposeAllocator(.{}){};
 
 const alloc = std.heap.c_allocator;
@@ -23,26 +22,9 @@ const alloc = std.heap.c_allocator;
 const HEIGHT: c_int = 720;
 const WIDTH: c_int = 1280;
 
-var homeScene: ?Scene = null;
-var configScene: ?Scene = null;
-var btScene: ?Scene = null;
-
 var sceneManager: ?SceneManager = null;
-
-var homeTemplate: ?HomeScene = null;
-var configTemplate: ?ConfigScene = null;
-var btTemplate: ?BluetoothScene = null;
-
 var dbusImpl: ?dbus.DBus = null;
 var btManager: ?bt.BluetoothManager = null;
-
-const iconsSize: c_int = 120;
-const buttonsHeight: c_int = 500;
-const aaXPos: c_int = 70;
-const btXPos: c_int = 310;
-const radXPos: c_int = 550;
-const fileXPos: c_int = 790;
-const cfgXPos: c_int = 1030;
 
 pub fn main() !void {
     const initReusult = sdlUtil.initEmAll();
@@ -60,12 +42,6 @@ pub fn main() !void {
 }
 
 pub fn initSomeStuff() u2 {
-    fenixFont = sdl.TTF_OpenFont("./res/font/Fenix-Regular.ttf", 32);
-    if (fenixFont == null) {
-        std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
-        return 1;
-    }
-
     window = sdl.SDL_CreateWindow("NatucciAA", sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, sdl.SDL_WINDOW_SHOWN);
     if (window == null) {
         std.debug.print("Erro ao criar Janela -> {s}", .{sdl.SDL_GetError()});
@@ -78,38 +54,15 @@ pub fn initSomeStuff() u2 {
         return 1;
     }
 
-    sceneManager = SceneManager.init(renderer.?) catch |err| {
-        std.debug.print("Erro ao iniciar o SceneManager: {}", .{err});
-        return 1;
-    };
-
-    homeTemplate = HomeScene.create(iconsSize, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight, renderer.?) catch |err| {
-        std.debug.print("Ocorreu um erro ao criar a HomeScene: {}\n", .{err});
-        return 1;
-    };
-
-    configTemplate = ConfigScene.create(renderer.?) catch |err| {
-        std.debug.print("Ocorreu um erro ao criar a ConfigScene: {}\n", .{err});
-        return 1;
-    };
-
     dbusImpl = dbus.DBus.init() catch |err| {
         std.debug.print("Erro ao iniciar dbus: {}\n", .{err});
         return 1;
     };
 
     btManager = bt.BluetoothManager.init(&dbusImpl.?, allocator.allocator());
-    btTemplate = BluetoothScene.create(renderer.?, &btManager.?) catch |err| {
-        std.debug.print("Ocorreu um erro ao criar a BluetoothScene: {}\n", .{err});
-        return 1;
-    };
 
-    homeScene = Scene.init("Home", &homeTemplate.?);
-    configScene = Scene.init("Config", &configTemplate.?);
-    btScene = Scene.init("Config", &btTemplate.?);
-
-    sceneManager.?.setScene(homeScene.?) catch |err| {
-        std.debug.print("Erro ao trocar scene: {}\n", .{err});
+    sceneManager = SceneManager.init(renderer.?, &btManager.?, allocator.allocator()) catch |err| {
+        std.debug.print("Erro ao iniciar o SceneManager: {}", .{err});
         return 1;
     };
 
@@ -117,23 +70,20 @@ pub fn initSomeStuff() u2 {
 }
 
 pub fn quitEmAll() void {
-    sdl.SDL_DestroyWindow(window);
-    sdl.SDL_DestroyRenderer(renderer);
-    sdl.TTF_CloseFont(fenixFont);
+    if (btManager) |*btmn| btmn.deinit();
+    if (sceneManager) |*sm| sm.deinit();
 
-    homeScene.?.deinit();
-    configScene.?.deinit();
-    sceneManager.?.deinit();
-    btManager.?.deinit();
+    if (renderer) |r| sdl.SDL_DestroyRenderer(r);
+    if (window) |w| sdl.SDL_DestroyWindow(w);
 
     _ = allocator.deinit();
 }
 
 pub fn loop() !void {
-    var rManager: SceneManager = sceneManager.?;
-    var event: sdl.SDL_Event = undefined;
-    var running = true;
+    const rManager = &sceneManager.?;
+    try rManager.setScene(rManager.homeScene);
 
+    var running = true;
     var last_time: u64 = sdl.SDL_GetTicks64();
     var delta_time: f32 = 0;
 
@@ -143,8 +93,7 @@ pub fn loop() !void {
     var oldMili = std.time.milliTimestamp();
     var framesCounted: u64 = 0;
 
-    btScene.?.active = false;
-    configScene.?.active = false;
+    var event: sdl.SDL_Event = undefined;
 
     while (running) {
         const current_time = sdl.SDL_GetTicks64();
@@ -153,49 +102,7 @@ pub fn loop() !void {
 
         delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
 
-        rManager.update(delta_time, renderer.?);
-
-        while (sdl.SDL_PollEvent(&event) != 0) {
-            switch (event.type) {
-                sdl.SDL_KEYUP => {
-                    switch (event.key.keysym.sym) {
-                        sdl.SDLK_ESCAPE => {
-                            rManager.setScene(homeScene.?) catch |err| {
-                                std.debug.print("Erro ao trocar de cena: {}\n", .{err});
-                                return;
-                            };
-                        },
-                        else => {},
-                    }
-                },
-                sdl.SDL_MOUSEBUTTONUP => {
-                    const mouseX = event.button.x;
-                    const mouseY = event.button.y;
-
-                    const isButtonHeight: bool = mouseY > buttonsHeight and mouseY < buttonsHeight + iconsSize;
-                    var scene: ?Scene = null;
-
-                    if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsSize) and isButtonHeight == true) {
-                        scene = configScene;
-                    } else if (mouseX > btXPos and mouseX < (btXPos + iconsSize) and isButtonHeight == true) {
-                        scene = btScene;
-                    }
-
-                    if (scene != null) {
-                        rManager.setScene(scene.?) catch |err| {
-                            std.debug.print("Erro ao trocar de cena: {}\n", .{err});
-                            return;
-                        };
-                    }
-
-                    std.debug.print("Mouse pos X: {}, Y: {}\n", .{ mouseX, mouseY });
-                },
-                sdl.SDL_QUIT => running = false,
-
-                else => {},
-            }
-        }
-
+        rManager.update(delta_time, renderer.?, &event, &running);
         rManager.render();
 
         framesCounted += 1;

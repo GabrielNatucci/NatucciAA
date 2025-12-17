@@ -153,5 +153,10 @@ pub const BluetoothScene = struct {
             std.debug.print("Erro ao startDiscovery: {}\n", .{err});
             return;
         };
+
+        self.btManager.listDevices() catch |err| {
+            std.debug.print("Erro ao ListDevices: {}\n", .{err});
+            return;
+        };
     }
 };

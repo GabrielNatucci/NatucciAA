@@ -22,7 +22,6 @@ pub fn initEmAll() u2 {
         return 1;
     }
 
-
     return 0;
 }
 

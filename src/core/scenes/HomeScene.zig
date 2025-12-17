@@ -6,9 +6,9 @@ const timeUtil = @import("../../util/TimeUtil.zig");
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
 
 pub const HomeScene = struct {
-    fonteHorario: ?*sdl.TTF_Font,
+    fonteHorario: ?*sdl.TTF_Font = null,
     horario: ?[6]u8,
-    horarioTexture: ?*sdl.SDL_Texture,
+    horarioTexture: ?*sdl.SDL_Texture = null,
     horarioDest: ?sdl.SDL_Rect,
 
     androidAutoDest: ?sdl.SDL_Rect,
@@ -74,24 +74,6 @@ pub const HomeScene = struct {
         std.debug.print("Inicializando homeScene... (init)\n", .{});
     }
 
-    pub fn deinit(self: *HomeScene) void {
-        if (self.fonteHorario != null) {
-            sdl.TTF_CloseFont(self.fonteHorario);
-        }
-
-        if (self.horarioTexture != null) {
-            sdl.SDL_DestroyTexture(self.horarioTexture);
-        }
-
-        sdl.SDL_DestroyTexture(self.configTexture);
-        sdl.SDL_DestroyTexture(self.radioTexture);
-        sdl.SDL_DestroyTexture(self.bluetoothTexture);
-        sdl.SDL_DestroyTexture(self.androidAutoTexture);
-        sdl.SDL_DestroyTexture(self.filesTexture);
-
-        std.debug.print("Desligando homeScene\n", .{});
-    }
-
     pub fn update(self: *HomeScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
         _ = delta_time;
         _ = active;
@@ -151,5 +133,25 @@ pub const HomeScene = struct {
 
     pub fn inOfFocus(self: *HomeScene) void {
         _ = self;
+    }
+
+    pub fn deinit(self: *HomeScene) void {
+        if (self.fonteHorario) |font| {
+            sdl.TTF_CloseFont(font);
+            self.fonteHorario = null;
+        }
+
+        if (self.horarioTexture) |tex| {
+            sdl.SDL_DestroyTexture(tex);
+            self.horarioTexture = null;
+        }
+
+        sdl.SDL_DestroyTexture(self.configTexture);
+        sdl.SDL_DestroyTexture(self.radioTexture);
+        sdl.SDL_DestroyTexture(self.bluetoothTexture);
+        sdl.SDL_DestroyTexture(self.androidAutoTexture);
+        sdl.SDL_DestroyTexture(self.filesTexture);
+
+        std.debug.print("Desligando homeScene\n", .{});
     }
 };

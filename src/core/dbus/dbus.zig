@@ -97,5 +97,3 @@ pub const DBus = struct {
         return reply;
     }
 };
-
-
