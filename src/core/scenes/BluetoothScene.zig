@@ -107,9 +107,13 @@ pub const BluetoothScene = struct {
                 const height: c_int = textSurface.*.h;
 
                 var bluetoothDest: sdl.SDL_Rect = .{ .x = xOrigin, .y = yPosIndex, .w = width, .h = height };
-                var deviceDest: sdl.SDL_Rect = .{ .x = xOrigin - 15, .y = yPosIndex - 5, .w = 600, .h = textSurface.*.h + 10 };
+
+                // TEXTO
                 _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &bluetoothDest);
                 _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+                // BORDA
+                var deviceDest: sdl.SDL_Rect = .{ .x = xOrigin - 15, .y = yPosIndex - 5, .w = 600, .h = textSurface.*.h + 10 };
                 _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
                 yPosIndex += 47;
@@ -139,8 +143,6 @@ pub const BluetoothScene = struct {
     }
 
     pub fn handleEvent(self: *BluetoothScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
-        _ = self;
-
         switch (event.type) {
             sdl.SDL_MOUSEBUTTONUP => {
                 const mouseX = event.button.x;
@@ -154,9 +156,22 @@ pub const BluetoothScene = struct {
                         std.debug.print("Erro ao trocar de cena: {}\n", .{err});
                         return;
                     };
-                }
+                } else if (self.devicesTex.?.items.len >= 0) {
+                    var yPosIndex: u16 = 200;
+                    for (0..self.devicesTex.?.items.len) |i| {
+                        const textSurface: *sdl.SDL_Surface = self.devicesSur.?.items[i];
+                        const height: c_int = textSurface.*.h;
 
-                std.debug.print("Mouse pos X: {}, Y: {}\n", .{ mouseX, mouseY });
+                        if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex
+                            and mouseX > xOrigin - 15 and mouseX < xOrigin - 15 + 600) 
+                        {
+                            std.debug.print("Nome do DEVICE: {s}\n", .{self.btManager.devices.items[i].name.items});
+                            break;
+                        }
+
+                        yPosIndex += 47;
+                    }
+                }
             },
             else => {},
         }
