@@ -7,6 +7,10 @@ const textureUtil = @import("../../util/SDLTextureUtil.zig");
 const ArrayList = std.array_list.Managed;
 const bt = @import("../../core/bluetooth/BluetoothManager.zig");
 
+const backButtonDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
+const xOrigin: c_int = 355;
+const deviceColor: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+
 pub const BluetoothScene = struct {
     fonteBluetooth: ?*sdl.TTF_Font,
     goBackTexture: *sdl.SDL_Texture,
@@ -15,8 +19,6 @@ pub const BluetoothScene = struct {
     devicesTex: ?ArrayList(*sdl.SDL_Texture),
     devicesSur: ?ArrayList(*sdl.SDL_Surface),
     allocator: std.mem.Allocator,
-    const xOrigin: c_int = 355;
-    const deviceColor: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
     pub fn create(renderer: *sdl.SDL_Renderer, bluetooth: *bt.BluetoothManager, allocator: std.mem.Allocator) !BluetoothScene {
         std.debug.print("\nInicializando bluetoothScene...\n", .{});
@@ -133,16 +135,29 @@ pub const BluetoothScene = struct {
 
         var bluetoothDest: sdl.SDL_Rect = .{ .x = 565, .y = 10, .w = width, .h = height };
         _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &bluetoothDest);
-        var backDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
-
-        _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backDest);
+        _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backButtonDest);
     }
 
     pub fn handleEvent(self: *BluetoothScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
         _ = self;
-        _ = sManager;
 
         switch (event.type) {
+            sdl.SDL_MOUSEBUTTONUP => {
+                const mouseX = event.button.x;
+                const mouseY = event.button.y;
+
+                const isBackbuttonHeight: bool = mouseY > backButtonDest.y and mouseY < backButtonDest.y + backButtonDest.h;
+                const isBackbuttonWidth: bool = mouseX > backButtonDest.x and mouseX < backButtonDest.x + backButtonDest.w;
+
+                if (isBackbuttonHeight and isBackbuttonWidth) {
+                    sManager.setScene(sManager.homeScene) catch |err| {
+                        std.debug.print("Erro ao trocar de cena: {}\n", .{err});
+                        return;
+                    };
+                }
+
+                std.debug.print("Mouse pos X: {}, Y: {}\n", .{ mouseX, mouseY });
+            },
             else => {},
         }
     }

@@ -89,19 +89,7 @@ pub const SceneManager = struct {
             self.current_scene.?.handleEvent(self, event);
 
             switch (event.type) {
-                sdl.SDL_KEYUP => {
-                    switch (event.key.keysym.sym) {
-                        sdl.SDLK_ESCAPE => {
-                            self.setScene(self.homeScene) catch |err| {
-                                std.debug.print("Erro ao trocar de cena: {}\n", .{err});
-                                return;
-                            };
-                        },
-                        else => {},
-                    }
-                },
                 sdl.SDL_QUIT => running.* = false,
-
                 else => {},
             }
         }

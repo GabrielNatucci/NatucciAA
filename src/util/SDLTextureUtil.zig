@@ -10,7 +10,6 @@ pub fn loadSDLTexture(renderer: *sdl.SDL_Renderer, path: [:0]const u8) !*sdl.SDL
     }
 
     defer sdl.SDL_FreeSurface(tmpSurface);
-
     return sdl.SDL_CreateTextureFromSurface(renderer, tmpSurface).?;
 }
 
@@ -24,6 +23,5 @@ pub fn createTextureFromText(renderer: *sdl.SDL_Renderer, color: sdl.SDL_Color, 
     }
 
     const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
-
     return textTexture.?;
 }

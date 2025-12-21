@@ -4,6 +4,7 @@ const Scene = @import("Scene.zig");
 const SceneManager = @import("../SceneManager.zig").SceneManager;
 const timeUtil = @import("../../util/TimeUtil.zig");
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
+const SceneUtil = @import("./sceneUtil/SceneUtil.zig");
 
 pub const ConfigScene = struct {
     fonteConfig: ?*sdl.TTF_Font,
@@ -70,17 +71,26 @@ pub const ConfigScene = struct {
 
         _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &configDest);
 
-        var backDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
-
-        _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backDest);
+        _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &SceneUtil.backButtonDest);
     }
-
 
     pub fn handleEvent(self: *ConfigScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
         _ = self;
-        _ = sManager;
 
         switch (event.type) {
+            sdl.SDL_MOUSEBUTTONUP => {
+                const mouseX = event.button.x;
+                const mouseY = event.button.y;
+
+                if (SceneUtil.isBackButton(mouseY, mouseX)) {
+                    sManager.setScene(sManager.homeScene) catch |err| {
+                        std.debug.print("Erro ao trocar de cena: {}\n", .{err});
+                        return;
+                    };
+                }
+
+                std.debug.print("Mouse pos X: {}, Y: {}\n", .{ mouseX, mouseY });
+            },
             else => {},
         }
     }
@@ -90,7 +100,6 @@ pub const ConfigScene = struct {
     }
 
     pub fn inOfFocus(self: *ConfigScene) void {
-
         _ = self;
     }
 };
