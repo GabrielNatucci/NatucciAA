@@ -47,19 +47,16 @@ pub const SceneManager = struct {
 
         const homeTemplate = try allocator.create(HomeScene);
         homeTemplate.* = try HomeScene.create(iconsSize, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight, renderer);
-
-        const configTemplate = try allocator.create(ConfigScene);
-        configTemplate.* = try ConfigScene.create(renderer);
-
-        const btTemplate = try allocator.create(BluetoothScene);
-        btTemplate.* = try BluetoothScene.create(renderer, btManager);
-
         var homeScene = try allocator.create(Scene);
         homeScene.* = Scene.init("Home", homeTemplate);
 
+        const configTemplate = try allocator.create(ConfigScene);
+        configTemplate.* = try ConfigScene.create(renderer);
         var configScene = try allocator.create(Scene);
         configScene.* = Scene.init("Config", configTemplate);
 
+        const btTemplate = try allocator.create(BluetoothScene);
+        btTemplate.* = try BluetoothScene.create(renderer, btManager, allocator);
         var btScene = try allocator.create(Scene);
         btScene.* = Scene.init("BT", btTemplate);
 
