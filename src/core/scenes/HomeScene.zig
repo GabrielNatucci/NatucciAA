@@ -1,9 +1,17 @@
 const std = @import("std");
 const sdl = @import("../../sdlImport/Sdl.zig").sdl;
-const Scene = @import("Scene.zig");
+const Scene = @import("Scene.zig").Scene;
 const SceneManager = @import("../SceneManager.zig");
 const timeUtil = @import("../../util/TimeUtil.zig");
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
+
+pub const iconsSize: c_int = 120;
+pub const buttonsHeight: c_int = 500;
+pub const aaXPos: c_int = 70;
+pub const btXPos: c_int = 310;
+pub const radXPos: c_int = 550;
+pub const fileXPos: c_int = 790;
+pub const cfgXPos: c_int = 1030;
 
 pub const HomeScene = struct {
     fonteHorario: ?*sdl.TTF_Font = null,
@@ -26,7 +34,7 @@ pub const HomeScene = struct {
     configDest: ?sdl.SDL_Rect,
     configTexture: *sdl.SDL_Texture,
 
-    pub fn create(iconsLen: c_int, aaXPos: c_int, btXPos: c_int, fileXPos: c_int, cfgXPos: c_int, radXPos: c_int, buttonheight: c_int, renderer: *sdl.SDL_Renderer) !HomeScene {
+    pub fn create(renderer: *sdl.SDL_Renderer) !HomeScene {
         std.debug.print("\nInicializando homeScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 250);
@@ -39,11 +47,11 @@ pub const HomeScene = struct {
             sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);
         }
 
-        const aaDest: ?sdl.SDL_Rect = .{ .x = aaXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
-        const btDest: ?sdl.SDL_Rect = .{ .x = btXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
-        const filesDest: ?sdl.SDL_Rect = .{ .x = fileXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
-        const cfgDest: ?sdl.SDL_Rect = .{ .x = cfgXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
-        const radDest: ?sdl.SDL_Rect = .{ .x = radXPos, .y = buttonheight, .w = iconsLen, .h = iconsLen };
+        const aaDest: ?sdl.SDL_Rect = .{ .x = aaXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
+        const btDest: ?sdl.SDL_Rect = .{ .x = btXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
+        const filesDest: ?sdl.SDL_Rect = .{ .x = fileXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
+        const cfgDest: ?sdl.SDL_Rect = .{ .x = cfgXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
+        const radDest: ?sdl.SDL_Rect = .{ .x = radXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
 
         const cfgTexture = try textureUtil.loadSDLTexture(renderer, "res/images/configIcon.png");
         const radTexture = try textureUtil.loadSDLTexture(renderer, "res/images/radioIcon.png");
@@ -113,15 +121,31 @@ pub const HomeScene = struct {
         _ = sdl.SDL_RenderCopy(renderer, self.configTexture, null, &self.configDest.?);
     }
 
-    pub fn handleEvent(self: *HomeScene, event: sdl.SDL_Event) void {
+    pub fn handleEvent(self: *HomeScene, sManager: *SceneManager.SceneManager, event: *sdl.SDL_Event) void {
+        _ = self;
+
         switch (event.type) {
-            .key_press => {
-                if (event.key) |k| {
-                    std.debug.print("[{s}] Tecla pressionada: {c}\n", .{ self.name, k });
+            sdl.SDL_MOUSEBUTTONUP => {
+                const mouseX = event.button.x;
+                const mouseY = event.button.y;
+
+                const isButtonHeight: bool = mouseY > buttonsHeight and mouseY < buttonsHeight + iconsSize;
+                var scene: ?*Scene = null;
+
+                if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsSize) and isButtonHeight == true) {
+                    scene = sManager.configScene;
+                } else if (mouseX > btXPos and mouseX < (btXPos + iconsSize) and isButtonHeight == true) {
+                    scene = sManager.btScene;
                 }
-            },
-            .mouse_click => {
-                std.debug.print("[{s}] Clique detectado\n", .{self.name});
+
+                if (scene != null) {
+                    sManager.setScene(scene.?) catch |err| {
+                        std.debug.print("Erro ao trocar de cena: {}\n", .{err});
+                        return;
+                    };
+                }
+
+                std.debug.print("Mouse pos X: {}, Y: {}\n", .{ mouseX, mouseY });
             },
             else => {},
         }

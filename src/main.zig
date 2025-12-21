@@ -66,6 +66,9 @@ pub fn initSomeStuff() u2 {
         return 1;
     };
 
+    _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_SCALE_QUALITY, "2");
+    _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_VSYNC, "1");
+
     return 0;
 }
 
@@ -80,15 +83,12 @@ pub fn quitEmAll() void {
 }
 
 pub fn loop() !void {
-    const rManager = &sceneManager.?;
-    try rManager.setScene(rManager.homeScene);
+    const sManager = &sceneManager.?;
+    try sManager.setScene(sManager.homeScene);
 
     var running = true;
     var last_time: u64 = sdl.SDL_GetTicks64();
     var delta_time: f32 = 0;
-
-    _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_SCALE_QUALITY, "2");
-    _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_VSYNC, "1");
 
     var oldMili = std.time.milliTimestamp();
     var framesCounted: u64 = 0;
@@ -102,8 +102,8 @@ pub fn loop() !void {
 
         delta_time = @as(f32, @floatFromInt(delta_ms)) / 1000.0;
 
-        rManager.update(delta_time, renderer.?, &event, &running);
-        rManager.render();
+        sManager.update(delta_time, renderer.?, &event, &running);
+        sManager.render();
 
         framesCounted += 1;
 

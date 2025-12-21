@@ -1,5 +1,6 @@
 const std = @import("std");
 const sdl = @import("../../sdlImport/Sdl.zig").sdl;
+const SceneManager = @import("../SceneManager.zig").SceneManager;
 
 pub const Scene = struct {
     name: []const u8,
@@ -12,6 +13,7 @@ pub const Scene = struct {
         deinit: *const fn (*anyopaque) void,
         update: *const fn (*anyopaque, f32, *sdl.SDL_Renderer, active: bool) void,
         render: *const fn (*anyopaque, *sdl.SDL_Renderer) void,
+        handleEvent: *const fn (*anyopaque, self: *SceneManager, event: *sdl.SDL_Event) void,
         outOfFocus: *const fn (*anyopaque) void,
         inOfFocus: *const fn (*anyopaque) void,
     };
@@ -49,6 +51,11 @@ pub const Scene = struct {
                 const self: *T = @ptrCast(@alignCast(ptr));
                 self.inOfFocus();
             }
+
+            fn handleEvent(ptr: *anyopaque, sManager: *SceneManager, event: *sdl.SDL_Event) void {
+                const self: *T = @ptrCast(@alignCast(ptr));
+                self.handleEvent(sManager, event);
+            }
         };
 
         return .{
@@ -62,6 +69,7 @@ pub const Scene = struct {
                 .render = gen.render,
                 .outOfFocus = gen.outOfFocus,
                 .inOfFocus = gen.inOfFocus,
+                .handleEvent = gen.handleEvent,
             },
         };
     }
@@ -89,8 +97,12 @@ pub const Scene = struct {
         self.vtable.outOfFocus(self.ptr);
     }
 
-    pub fn inOfFocus(self: Scene) void {
+    pub fn inOfFocus(self: Scene, ) void {
         self.vtable.inOfFocus(self.ptr);
+    }
+
+    pub fn handleEvent(self: Scene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
+        self.vtable.handleEvent(self.ptr, sManager, event);
     }
 
     pub fn setActive(self: *Scene, active: bool) void {

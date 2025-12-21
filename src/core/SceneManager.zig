@@ -6,14 +6,6 @@ const ConfigScene = @import("./scenes/ConfigScene.zig").ConfigScene;
 const BluetoothScene = @import("./scenes/BluetoothScene.zig").BluetoothScene;
 const bt = @import("bluetooth/BluetoothManager.zig");
 
-const iconsSize: c_int = 120;
-const buttonsHeight: c_int = 500;
-const aaXPos: c_int = 70;
-const btXPos: c_int = 310;
-const radXPos: c_int = 550;
-const fileXPos: c_int = 790;
-const cfgXPos: c_int = 1030;
-
 pub const SceneManager = struct {
     allocator: std.mem.Allocator,
     current_scene: ?*Scene = null,
@@ -46,7 +38,7 @@ pub const SceneManager = struct {
         defer sdl.SDL_FreeSurface(backgroundSurface);
 
         const homeTemplate = try allocator.create(HomeScene);
-        homeTemplate.* = try HomeScene.create(iconsSize, aaXPos, btXPos, fileXPos, cfgXPos, radXPos, buttonsHeight, renderer);
+        homeTemplate.* = try HomeScene.create(renderer);
         var homeScene = try allocator.create(Scene);
         homeScene.* = Scene.init("Home", homeTemplate);
 
@@ -94,6 +86,8 @@ pub const SceneManager = struct {
 
     pub fn update(self: *SceneManager, delta_time: f32, renderer: *sdl.SDL_Renderer, event: *sdl.SDL_Event, running: *bool) void {
         while (sdl.SDL_PollEvent(event) != 0) {
+            self.current_scene.?.handleEvent(self, event);
+
             switch (event.type) {
                 sdl.SDL_KEYUP => {
                     switch (event.key.keysym.sym) {
@@ -105,28 +99,6 @@ pub const SceneManager = struct {
                         },
                         else => {},
                     }
-                },
-                sdl.SDL_MOUSEBUTTONUP => {
-                    const mouseX = event.button.x;
-                    const mouseY = event.button.y;
-
-                    const isButtonHeight: bool = mouseY > buttonsHeight and mouseY < buttonsHeight + iconsSize;
-                    var scene: ?*Scene = null;
-
-                    if (mouseX > cfgXPos and mouseX < (cfgXPos + iconsSize) and isButtonHeight == true) {
-                        scene = self.configScene; 
-                    } else if (mouseX > btXPos and mouseX < (btXPos + iconsSize) and isButtonHeight == true) {
-                        scene = self.btScene; 
-                    }
-
-                    if (scene != null) {
-                        self.setScene(scene.?) catch |err| {
-                            std.debug.print("Erro ao trocar de cena: {}\n", .{err});
-                            return;
-                        };
-                    }
-
-                    std.debug.print("Mouse pos X: {}, Y: {}\n", .{ mouseX, mouseY });
                 },
                 sdl.SDL_QUIT => running.* = false,
 

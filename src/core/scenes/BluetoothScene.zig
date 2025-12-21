@@ -1,7 +1,7 @@
 const std = @import("std");
 const sdl = @import("../../sdlImport/Sdl.zig").sdl;
 const Scene = @import("Scene.zig");
-const SceneManager = @import("../SceneManager.zig");
+const SceneManager = @import("../SceneManager.zig").SceneManager;
 const timeUtil = @import("../../util/TimeUtil.zig");
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
 const ArrayList = std.array_list.Managed;
@@ -138,16 +138,11 @@ pub const BluetoothScene = struct {
         _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backDest);
     }
 
-    pub fn handleEvent(self: *BluetoothScene, event: sdl.SDL_Event) void {
+    pub fn handleEvent(self: *BluetoothScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
+        _ = self;
+        _ = sManager;
+
         switch (event.type) {
-            .key_press => {
-                if (event.key) |k| {
-                    std.debug.print("[{s}] Tecla pressionada: {c}\n", .{ self.name, k });
-                }
-            },
-            .mouse_click => {
-                std.debug.print("[{s}] Clique detectado\n", .{self.name});
-            },
             else => {},
         }
     }
