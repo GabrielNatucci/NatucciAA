@@ -146,15 +146,18 @@ pub const BluetoothScene = struct {
 
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
-        var deviceDest: sdl.SDL_Rect = .{ .x = bordaX, .y = bordaY, .w = bordaWidth, .h = bordaHeight };
+        var deviceDest: sdl.SDL_Rect = .{
+            .x = bordaX,
+            .y = bordaY,
+            .w = bordaWidth,
+            .h = bordaHeight,
+        };
         _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
-        const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, self.selectedDevice.?.name.items.ptr, color);
-        if (textSurface == null) return;
+        const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, self.selectedDevice.?.name.items.ptr, color) orelse return;
         defer sdl.SDL_FreeSurface(textSurface);
 
-        const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
-        if (textTexture == null) return;
+        const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface) orelse return;
         defer sdl.SDL_DestroyTexture(textTexture);
 
         const textWidth: c_int = textSurface.*.w;
@@ -163,7 +166,12 @@ pub const BluetoothScene = struct {
         const textX: c_int = bordaX + @divTrunc(bordaWidth, 2) - @divTrunc(textWidth, 2);
         const textY: c_int = bordaY + 10;
 
-        var deviceNameDest: sdl.SDL_Rect = .{ .x = textX, .y = textY, .w = textWidth, .h = textHeight };
+        var deviceNameDest: sdl.SDL_Rect = .{
+            .x = textX,
+            .y = textY,
+            .w = textWidth,
+            .h = textHeight,
+        };
         _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &deviceNameDest);
     }
 
