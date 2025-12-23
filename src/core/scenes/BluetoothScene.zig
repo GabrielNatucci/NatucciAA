@@ -5,6 +5,7 @@ const SceneManager = @import("../SceneManager.zig").SceneManager;
 const timeUtil = @import("../../util/TimeUtil.zig");
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
 const ArrayList = std.array_list.Managed;
+const Device = @import("../bluetooth/Device.zig").Device;
 const bt = @import("../../core/bluetooth/BluetoothManager.zig");
 
 const backButtonDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
@@ -19,6 +20,7 @@ pub const BluetoothScene = struct {
     devicesTex: ?ArrayList(*sdl.SDL_Texture),
     devicesSur: ?ArrayList(*sdl.SDL_Surface),
     allocator: std.mem.Allocator,
+    selectedDevice: ?*Device,
 
     pub fn create(renderer: *sdl.SDL_Renderer, bluetooth: *bt.BluetoothManager, allocator: std.mem.Allocator) !BluetoothScene {
         std.debug.print("\nInicializando bluetoothScene...\n", .{});
@@ -43,6 +45,7 @@ pub const BluetoothScene = struct {
             .devicesTex = null,
             .devicesSur = null,
             .allocator = allocator,
+            .selectedDevice = null,
         };
     }
 
@@ -60,7 +63,7 @@ pub const BluetoothScene = struct {
     fn listarDispositivos(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         // para listar os dispositivos a cada dois segundos..
         // sem isso aqui dá merda!!
-        if (self.lastTimeSeconds >= 2.0) {
+        if (self.lastTimeSeconds >= 3.0 and self.selectedDevice == null) {
             self.lastTimeSeconds = 0;
 
             self.btManager.listDevices() catch |err| {
@@ -96,9 +99,19 @@ pub const BluetoothScene = struct {
     }
 
     pub fn render(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
+        if (self.selectedDevice == null) {
+            self.renderDevices(renderer);
+        } else {
+            self.renderDevicePairing(renderer);
+        }
+
+        self.renderBoilerplate(renderer);
+    }
+
+    fn renderDevices(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         var yPosIndex: u16 = 200;
 
-        if (self.devicesTex.?.items.len >= 0 and (self.devicesTex.?.items.len == self.devicesSur.?.items.len)) {
+        if (self.devicesTex.?.items.len >= 0) {
             for (0..self.devicesTex.?.items.len) |i| {
                 const textSurface: *sdl.SDL_Surface = self.devicesSur.?.items[i];
                 const textTexture: *sdl.SDL_Texture = self.devicesTex.?.items[i];
@@ -119,8 +132,15 @@ pub const BluetoothScene = struct {
                 yPosIndex += 47;
             }
         }
+    }
 
-        renderBoilerplate(self, renderer);
+    fn renderDevicePairing(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
+        _ = self;
+
+        // BORDA
+        var deviceDest: sdl.SDL_Rect = .{ .x = 200, .y = 150, .w = 880, .h = 420 };
+        _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
+
     }
 
     fn renderBoilerplate(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
@@ -162,10 +182,9 @@ pub const BluetoothScene = struct {
                         const textSurface: *sdl.SDL_Surface = self.devicesSur.?.items[i];
                         const height: c_int = textSurface.*.h;
 
-                        if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex
-                            and mouseX > xOrigin - 15 and mouseX < xOrigin - 15 + 600) 
-                        {
-                            std.debug.print("Nome do DEVICE: {s}\n", .{self.btManager.devices.items[i].name.items});
+                        if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex and mouseX > xOrigin - 15 and mouseX < xOrigin - 15 + 600) {
+                            self.selectedDevice = &self.btManager.devices.items[i];
+
                             break;
                         }
 

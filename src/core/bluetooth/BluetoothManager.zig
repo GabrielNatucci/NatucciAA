@@ -125,6 +125,146 @@ pub const BluetoothManager = struct {
 
         self.devices.deinit();
     }
+    pub fn connectDevice(self: *BluetoothManager, device: *const Device) !void {
+        // Converter o endereço MAC para o formato do path D-Bus
+        // Exemplo: "AA:BB:CC:DD:EE:FF" -> "/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF"
+        const device_path = try self.buildDevicePath(device.address.items);
+        defer self.allocator.free(device_path);
+
+        std.debug.print("Conectando ao dispositivo: {s}\n", .{device.name.items});
+        std.debug.print("Path: {s}\n", .{device_path});
+
+        try self.dbus.callMethod(
+            "org.bluez",
+            device_path.ptr,
+            "org.bluez.Device1",
+            "Connect",
+        );
+
+        std.debug.print("Conectado com sucesso!\n", .{});
+    }
+
+    pub fn disconnectDevice(self: *BluetoothManager, device: *const Device) !void {
+        const device_path = try self.buildDevicePath(device.address.items);
+        defer self.allocator.free(device_path);
+
+        std.debug.print("Desconectando do dispositivo: {s}\n", .{device.name.items});
+
+        try self.dbus.callMethod(
+            "org.bluez",
+            device_path.ptr,
+            "org.bluez.Device1",
+            "Disconnect",
+        );
+
+        std.debug.print("Desconectado com sucesso!\n", .{});
+    }
+
+    pub fn pairDevice(self: *BluetoothManager, device: *const Device) !void {
+        const device_path = try self.buildDevicePath(device.address.items);
+        defer self.allocator.free(device_path);
+
+        std.debug.print("Pareando com dispositivo: {s}\n", .{device.name.items});
+
+        try self.dbus.callMethod(
+            "org.bluez",
+            device_path.ptr,
+            "org.bluez.Device1",
+            "Pair",
+        );
+
+        std.debug.print("Pareado com sucesso!\n", .{});
+    }
+
+    pub fn trustDevice(self: *BluetoothManager, device: *const Device, trusted: bool) !void {
+        const device_path = try self.buildDevicePath(device.address.items);
+        defer self.allocator.free(device_path);
+
+        std.debug.print("Configurando trust para: {s}\n", .{device.name.items});
+
+        // Para setar propriedades, precisamos usar Properties.Set
+        try self.setDeviceProperty(device_path, "Trusted", trusted);
+
+        std.debug.print("Trust configurado!\n", .{});
+    }
+
+    fn buildDevicePath(self: *BluetoothManager, address: []const u8) ![]u8 {
+        // Criar o path do dispositivo baseado no endereço MAC
+        // "/org/bluez/hci0/dev_" + MAC com ':' substituído por '_'
+
+        var path = std.ArrayList(u8).init(self.allocator);
+        errdefer path.deinit();
+
+        try path.appendSlice("/org/bluez/hci0/dev_");
+
+        // Substituir ':' por '_' no endereço MAC
+        for (address) |char| {
+            if (char == ':') {
+                try path.append('_');
+            } else if (char != 0) { // Ignorar null terminator se houver
+                try path.append(char);
+            }
+        }
+
+        // Adicionar null terminator para C
+        try path.append(0);
+
+        return path.toOwnedSlice();
+    }
+
+    fn setDeviceProperty(self: *BluetoothManager, device_path: []const u8, property: []const u8, value: bool) !void {
+        const msg = c.dbus_message_new_method_call(
+            "org.bluez",
+            device_path.ptr,
+            "org.freedesktop.DBus.Properties",
+            "Set",
+        );
+        if (msg == null) return error.OutOfMemory;
+        defer _ = c.dbus_message_unref(msg);
+
+        // Adicionar argumentos: interface, property name, e variant
+        var args: c.DBusMessageIter = undefined;
+        c.dbus_message_iter_init_append(msg, &args);
+
+        // Adicionar interface name
+        const interface = "org.bluez.Device1";
+        var interface_ptr: [*c]const u8 = interface.ptr;
+        _ = c.dbus_message_iter_append_basic(&args, c.DBUS_TYPE_STRING, @ptrCast(&interface_ptr));
+
+        // Adicionar property name
+        var property_ptr: [*c]const u8 = property.ptr;
+        _ = c.dbus_message_iter_append_basic(&args, c.DBUS_TYPE_STRING, @ptrCast(&property_ptr));
+
+        // Adicionar variant com boolean
+        var variant: c.DBusMessageIter = undefined;
+        const variant_sig = "b";
+        _ = c.dbus_message_iter_open_container(&args, c.DBUS_TYPE_VARIANT, variant_sig.ptr, &variant);
+
+        const bool_value: u32 = if (value) 1 else 0;
+        _ = c.dbus_message_iter_append_basic(&variant, c.DBUS_TYPE_BOOLEAN, @ptrCast(&bool_value));
+        _ = c.dbus_message_iter_close_container(&args, &variant);
+
+        // Enviar mensagem
+        var err_buf: [64]u8 align(@alignOf(c.DBusError)) = undefined;
+        const err: *c.DBusError = @ptrCast(&err_buf);
+        c.dbus_error_init(err);
+        defer c.dbus_error_free(err);
+
+        const reply = c.dbus_connection_send_with_reply_and_block(
+            self.dbus.conn,
+            msg,
+            -1,
+            err,
+        );
+
+        if (c.dbus_error_is_set(err) != 0) {
+            return error.DBusCallFailed;
+        }
+
+        if (reply != null) {
+            _ = c.dbus_message_unref(reply);
+        }
+    }
 };
 
 fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?Device {
