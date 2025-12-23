@@ -6,6 +6,9 @@ const ConfigScene = @import("./scenes/ConfigScene.zig").ConfigScene;
 const BluetoothScene = @import("./scenes/BluetoothScene.zig").BluetoothScene;
 const bt = @import("bluetooth/BluetoothManager.zig");
 
+const WIDTH_RES = @import("../main.zig").WIDTH;
+const HEIGHT_RES = @import("../main.zig").HEIGHT;
+
 pub const SceneManager = struct {
     allocator: std.mem.Allocator,
     current_scene: ?*Scene = null,
@@ -100,7 +103,7 @@ pub const SceneManager = struct {
     }
 
     pub fn render(self: *SceneManager) void {
-        var dir: sdl.SDL_Rect = .{ .h = 720, .w = 1280, .x = 0, .y = 0 };
+        var dir: sdl.SDL_Rect = .{ .h = HEIGHT_RES, .w = WIDTH_RES, .x = 0, .y = 0 };
         _ = sdl.SDL_RenderCopy(self.renderer, self.background, null, &dir);
 
         if (self.current_scene) |scene| {

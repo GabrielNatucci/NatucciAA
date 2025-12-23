@@ -56,7 +56,7 @@ pub const ConfigScene = struct {
     pub fn render(self: *ConfigScene, renderer: *sdl.SDL_Renderer) void {
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
-        const textSurface = sdl.TTF_RenderText_Blended(self.fonteConfig, "CONFIG", color);
+        const textSurface = sdl.TTF_RenderText_Blended(self.fonteConfig, "Config", color);
         if (textSurface == null) return;
         defer sdl.SDL_FreeSurface(textSurface);
 

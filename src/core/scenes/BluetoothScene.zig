@@ -8,8 +8,11 @@ const ArrayList = std.array_list.Managed;
 const Device = @import("../bluetooth/Device.zig").Device;
 const bt = @import("../../core/bluetooth/BluetoothManager.zig");
 
+const WIDTH_RES = @import("../../main.zig").WIDTH;
+const HEIGHT_RES = @import("../../main.zig").HEIGHT;
+
 const backButtonDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
-const xOrigin: c_int = 355;
+const devicesX: c_int = 355;
 const deviceColor: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
 pub const BluetoothScene = struct {
@@ -119,14 +122,14 @@ pub const BluetoothScene = struct {
                 const width: c_int = textSurface.*.w;
                 const height: c_int = textSurface.*.h;
 
-                var bluetoothDest: sdl.SDL_Rect = .{ .x = xOrigin, .y = yPosIndex, .w = width, .h = height };
+                var bluetoothDest: sdl.SDL_Rect = .{ .x = devicesX, .y = yPosIndex, .w = width, .h = height };
 
                 // TEXTO
                 _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &bluetoothDest);
                 _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
                 // BORDA
-                var deviceDest: sdl.SDL_Rect = .{ .x = xOrigin - 15, .y = yPosIndex - 5, .w = 600, .h = textSurface.*.h + 10 };
+                var deviceDest: sdl.SDL_Rect = .{ .x = devicesX - 15, .y = yPosIndex - 5, .w = 600, .h = textSurface.*.h + 10 };
                 _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
                 yPosIndex += 47;
@@ -138,8 +141,8 @@ pub const BluetoothScene = struct {
         // BORDA
         const bordaX: c_int = 200;
         const bordaY: c_int = 150;
-        const bordaWidth: c_int = 1280 - (bordaX * 2);
-        const bordaHeight: c_int = 720 - (bordaY * 2);
+        const bordaWidth: c_int = WIDTH_RES - (bordaX * 2);
+        const bordaHeight: c_int = HEIGHT_RES - (bordaY * 2);
 
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
@@ -158,12 +161,13 @@ pub const BluetoothScene = struct {
         const textHeight: c_int = textSurface.*.h;
 
         const textX: c_int = bordaX + @divTrunc(bordaWidth, 2) - @divTrunc(textWidth, 2);
-        const textY: c_int = 180;
+        const textY: c_int = bordaY + 10;
 
         var deviceNameDest: sdl.SDL_Rect = .{ .x = textX, .y = textY, .w = textWidth, .h = textHeight };
         _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &deviceNameDest);
     }
 
+    // isso aqui é pra renderizar as coisas que sempre vão aparecer, botão de voltar e o nome da cena
     fn renderBoilerplate(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
@@ -178,7 +182,7 @@ pub const BluetoothScene = struct {
         const width: c_int = textSurface.*.w;
         const height: c_int = textSurface.*.h;
 
-        const textX = @divTrunc(1280, 2) - @divTrunc(width, 2);
+        const textX = @divTrunc(WIDTH_RES, 2) - @divTrunc(width, 2);
 
         var bluetoothDest: sdl.SDL_Rect = .{ .x = textX, .y = 10, .w = width, .h = height };
         _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &bluetoothDest);
@@ -205,7 +209,7 @@ pub const BluetoothScene = struct {
                         const textSurface: *sdl.SDL_Surface = self.devicesSur.?.items[i];
                         const height: c_int = textSurface.*.h;
 
-                        if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex and mouseX > xOrigin - 15 and mouseX < xOrigin - 15 + 600) {
+                        if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex and mouseX > devicesX - 15 and mouseX < devicesX - 15 + 600) {
                             self.selectedDevice = &self.btManager.devices.items[i];
 
                             break;

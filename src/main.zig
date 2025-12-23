@@ -19,8 +19,8 @@ var allocator = std.heap.GeneralPurposeAllocator(.{}){};
 
 const alloc = std.heap.c_allocator;
 
-const HEIGHT: c_int = 720;
-const WIDTH: c_int = 1280;
+pub const HEIGHT: c_int = 720;
+pub const WIDTH: c_int = 1280;
 
 var sceneManager: ?SceneManager = null;
 var dbusImpl: ?dbus.DBus = null;
