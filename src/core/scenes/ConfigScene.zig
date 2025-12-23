@@ -88,8 +88,6 @@ pub const ConfigScene = struct {
                         return;
                     };
                 }
-
-                std.debug.print("Mouse pos X: {}, Y: {}\n", .{ mouseX, mouseY });
             },
             else => {},
         }

@@ -135,12 +135,33 @@ pub const BluetoothScene = struct {
     }
 
     fn renderDevicePairing(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
-        _ = self;
-
         // BORDA
-        var deviceDest: sdl.SDL_Rect = .{ .x = 200, .y = 150, .w = 880, .h = 420 };
+        const bordaX: c_int = 200;
+        const bordaY: c_int = 150;
+        const bordaWidth: c_int = 1280 - (bordaX * 2);
+        const bordaHeight: c_int = 720 - (bordaY * 2);
+
+        const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+
+        var deviceDest: sdl.SDL_Rect = .{ .x = bordaX, .y = bordaY, .w = bordaWidth, .h = bordaHeight };
         _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
+        const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, self.selectedDevice.?.name.items.ptr, color);
+        if (textSurface == null) return;
+        defer sdl.SDL_FreeSurface(textSurface);
+
+        const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
+        if (textTexture == null) return;
+        defer sdl.SDL_DestroyTexture(textTexture);
+
+        const textWidth: c_int = textSurface.*.w;
+        const textHeight: c_int = textSurface.*.h;
+
+        const textX: c_int = bordaX + @divTrunc(bordaWidth, 2) - @divTrunc(textWidth, 2);
+        const textY: c_int = 180;
+
+        var deviceNameDest: sdl.SDL_Rect = .{ .x = textX, .y = textY, .w = textWidth, .h = textHeight };
+        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &deviceNameDest);
     }
 
     fn renderBoilerplate(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
@@ -157,7 +178,9 @@ pub const BluetoothScene = struct {
         const width: c_int = textSurface.*.w;
         const height: c_int = textSurface.*.h;
 
-        var bluetoothDest: sdl.SDL_Rect = .{ .x = 565, .y = 10, .w = width, .h = height };
+        const textX = @divTrunc(1280, 2) - @divTrunc(width, 2);
+
+        var bluetoothDest: sdl.SDL_Rect = .{ .x = textX, .y = 10, .w = width, .h = height };
         _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &bluetoothDest);
         _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backButtonDest);
     }
@@ -203,6 +226,7 @@ pub const BluetoothScene = struct {
         };
 
         self.deinitDevicesTextureSurface();
+        self.selectedDevice = null;
     }
 
     pub fn inOfFocus(self: *BluetoothScene) void {
