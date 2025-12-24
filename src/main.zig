@@ -27,7 +27,12 @@ var dbusImpl: ?dbus.DBus = null;
 var btManager: ?bt.BluetoothManager = null;
 
 pub fn main() !void {
+    const cwd = try std.fs.cwd().realpathAlloc(allocator.allocator(), ".");
+    std.debug.print("Diretorio: {s}\n", .{cwd});
+    allocator.allocator().free(cwd);
+
     const initReusult = sdlUtil.initEmAll();
+
     const componentReusult = initSomeStuff();
     if (initReusult > 0 or componentReusult > 0) {
         return;

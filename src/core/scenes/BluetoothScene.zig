@@ -154,25 +154,88 @@ pub const BluetoothScene = struct {
         };
         _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
-        const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, self.selectedDevice.?.name.items.ptr, color) orelse return;
-        defer sdl.SDL_FreeSurface(textSurface);
+        const deviceSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, self.selectedDevice.?.name.items.ptr, color) orelse return;
+        defer sdl.SDL_FreeSurface(deviceSurface);
 
-        const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface) orelse return;
-        defer sdl.SDL_DestroyTexture(textTexture);
+        const deviceTexture = sdl.SDL_CreateTextureFromSurface(renderer, deviceSurface) orelse return;
+        defer sdl.SDL_DestroyTexture(deviceTexture);
 
-        const textWidth: c_int = textSurface.*.w;
-        const textHeight: c_int = textSurface.*.h;
+        const deviceWidth: c_int = deviceSurface.*.w;
+        const deviceHeight: c_int = deviceSurface.*.h;
 
-        const textX: c_int = bordaX + @divTrunc(bordaWidth, 2) - @divTrunc(textWidth, 2);
-        const textY: c_int = bordaY + 10;
+        const deviceX: c_int = bordaX + @divTrunc(bordaWidth, 2) - @divTrunc(deviceWidth, 2);
+        const deviceY: c_int = bordaY - (@divTrunc(deviceHeight, 2)) + 25;
 
         var deviceNameDest: sdl.SDL_Rect = .{
-            .x = textX,
-            .y = textY,
-            .w = textWidth,
-            .h = textHeight,
+            .x = deviceX,
+            .y = deviceY,
+            .w = deviceWidth,
+            .h = deviceHeight,
         };
-        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &deviceNameDest);
+
+        _ = sdl.SDL_RenderCopy(renderer, deviceTexture, null, &deviceNameDest);
+        _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
+
+        const querConectarText = sdl.TTF_RenderText_Blended(self.fonteBluetooth, "Deseja se conectar a esse dispositivo?", color) orelse return;
+        defer sdl.SDL_FreeSurface(querConectarText);
+
+        const querConectarTexture = sdl.SDL_CreateTextureFromSurface(renderer, querConectarText) orelse return;
+        defer sdl.SDL_DestroyTexture(querConectarTexture);
+
+        const querConectarWidth: c_int = querConectarText.*.w;
+        const querConectarHeight: c_int = querConectarText.*.h;
+
+        const querConectarX: c_int = bordaX + @divTrunc(bordaWidth, 2) - @divTrunc(querConectarWidth, 2);
+        const querConectarY: c_int = bordaY + @divTrunc(bordaHeight, 2) - @divTrunc(querConectarHeight, 2);
+
+        var querConectarDest: sdl.SDL_Rect = .{
+            .x = querConectarX,
+            .y = querConectarY,
+            .w = querConectarWidth,
+            .h = querConectarHeight,
+        };
+
+        _ = sdl.SDL_RenderCopy(renderer, querConectarTexture, null, &querConectarDest);
+
+        const simText = sdl.TTF_RenderText_Blended(self.fonteBluetooth, "Sim", color) orelse return;
+        const naoText = sdl.TTF_RenderText_Blended(self.fonteBluetooth, "Nao", color) orelse return;
+        defer sdl.SDL_FreeSurface(simText);
+        defer sdl.SDL_FreeSurface(naoText);
+
+        const simTexture = sdl.SDL_CreateTextureFromSurface(renderer, simText) orelse return;
+        const naoTexture = sdl.SDL_CreateTextureFromSurface(renderer, naoText) orelse return;
+        defer sdl.SDL_DestroyTexture(simTexture);
+        defer sdl.SDL_DestroyTexture(naoTexture);
+
+        const simWidth: c_int = simText.*.w;
+        const simHeight: c_int = simText.*.h;
+
+        const simX: c_int = bordaX + @divTrunc(bordaWidth, 4) + @divTrunc(bordaWidth, 2) - @divTrunc(simWidth, 2);
+        const simY: c_int = (bordaY + bordaHeight) - 50 - (@divTrunc(simHeight, 2));
+
+        var simDest: sdl.SDL_Rect = .{
+            .x = simX,
+            .y = simY,
+            .w = simWidth,
+            .h = simHeight,
+        };
+
+        _ = sdl.SDL_RenderCopy(renderer, simTexture, null, &simDest);
+
+        const naoWidth: c_int = naoText.*.w;
+        const naoHeight: c_int = naoText.*.h;
+
+        const naoX: c_int = bordaX + @divTrunc(bordaWidth, 4) - @divTrunc(naoWidth, 2);
+        const naoY: c_int = (bordaY + bordaHeight) - 50 - (@divTrunc(naoHeight, 2));
+
+        var naoDest: sdl.SDL_Rect = .{
+            .x = naoX,
+            .y = naoY,
+            .w = naoWidth,
+            .h = naoHeight,
+        };
+
+        _ = sdl.SDL_RenderCopy(renderer, naoTexture, null, &naoDest);
     }
 
     // isso aqui é pra renderizar as coisas que sempre vão aparecer, botão de voltar e o nome da cena
