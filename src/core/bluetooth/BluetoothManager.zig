@@ -17,13 +17,30 @@ pub const BluetoothManager = struct {
     pub fn init(dbus: *DBus, allocator: std.mem.Allocator) BluetoothManager {
         const devices = ArrayList(Device).init(allocator);
 
-        return BluetoothManager{
+        var manager = BluetoothManager{
             .dbus = dbus,
             .adapter_path = "/org/bluez/hci0",
             .discovery = false,
             .allocator = allocator,
             .devices = devices,
         };
+
+        manager.setupSimpleAgent() catch {
+            std.debug.print("Erro ao setar agent\n", .{});
+        };
+
+        return manager;
+    }
+
+    pub fn printDeviceInfo(self: *BluetoothManager, device: *const Device) void {
+        _ = self;
+        std.debug.print("\n📱 Dispositivo: {s}\n", .{device.name.items});
+        std.debug.print("   MAC: {s}\n", .{device.address.items});
+        std.debug.print("   RSSI: {d} dBm\n", .{device.rssi});
+        std.debug.print("   🔌 Conectado: {s}\n", .{if (device.connected) "SIM" else "NÃO"});
+        std.debug.print("   🤝 Pareado: {s}\n", .{if (device.paired) "SIM" else "NÃO"});
+        std.debug.print("   ✅ Confiável: {s}\n", .{if (device.trusted) "SIM" else "NÃO"});
+        std.debug.print("   🚫 Bloqueado: {s}\n", .{if (device.blocked) "SIM" else "NÃO"});
     }
 
     pub fn startDiscovery(self: *BluetoothManager) !void {
@@ -100,6 +117,7 @@ pub const BluetoothManager = struct {
                         _ = c.dbus_message_iter_next(&iface_dict);
 
                         const dev = try parseDeviceProperties(self, &iface_dict);
+                        // No BluetoothManager
 
                         if (dev != null) {
                             try self.devices.append(dev.?);
@@ -125,21 +143,24 @@ pub const BluetoothManager = struct {
 
         self.devices.deinit();
     }
+
     pub fn connectDevice(self: *BluetoothManager, device: *const Device) !void {
-        // Converter o endereço MAC para o formato do path D-Bus
-        // Exemplo: "AA:BB:CC:DD:EE:FF" -> "/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF"
         const device_path = try self.buildDevicePath(device.address.items);
         defer self.allocator.free(device_path);
 
         std.debug.print("Conectando ao dispositivo: {s}\n", .{device.name.items});
         std.debug.print("Path: {s}\n", .{device_path});
 
-        try self.dbus.callMethod(
+        // Adicione um try-catch aqui para capturar o erro detalhado
+        self.dbus.callMethod(
             "org.bluez",
             device_path.ptr,
             "org.bluez.Device1",
             "Connect",
-        );
+        ) catch |err| {
+            std.debug.print("❌ ERRO D-BUS: {}\n", .{err});
+            return err;
+        };
 
         std.debug.print("Conectado com sucesso!\n", .{});
     }
@@ -189,24 +210,19 @@ pub const BluetoothManager = struct {
     }
 
     fn buildDevicePath(self: *BluetoothManager, address: []const u8) ![]u8 {
-        // Criar o path do dispositivo baseado no endereço MAC
-        // "/org/bluez/hci0/dev_" + MAC com ':' substituído por '_'
-
-        var path = std.ArrayList(u8).init(self.allocator);
+        var path = ArrayList(u8).init(self.allocator);
         errdefer path.deinit();
 
         try path.appendSlice("/org/bluez/hci0/dev_");
 
-        // Substituir ':' por '_' no endereço MAC
         for (address) |char| {
             if (char == ':') {
                 try path.append('_');
-            } else if (char != 0) { // Ignorar null terminator se houver
+            } else if (char != 0) {
                 try path.append(char);
             }
         }
 
-        // Adicionar null terminator para C
         try path.append(0);
 
         return path.toOwnedSlice();
@@ -265,6 +281,80 @@ pub const BluetoothManager = struct {
             _ = c.dbus_message_unref(reply);
         }
     }
+
+    pub fn setupSimpleAgent(self: *BluetoothManager) !void {
+        const msg = c.dbus_message_new_method_call(
+            "org.bluez",
+            "/org/bluez",
+            "org.bluez.AgentManager1",
+            "RegisterAgent",
+        );
+        if (msg == null) return error.OutOfMemory;
+        defer _ = c.dbus_message_unref(msg);
+
+        var args: c.DBusMessageIter = undefined;
+        c.dbus_message_iter_init_append(msg, &args);
+
+        // Path do agente
+        const agent_path = "/org/bluez/auto_agent";
+        var path_ptr: [*c]const u8 = agent_path.ptr;
+        _ = c.dbus_message_iter_append_basic(&args, c.DBUS_TYPE_OBJECT_PATH, @ptrCast(&path_ptr));
+
+        // Capability: NoInputNoOutput = aceita tudo
+        const capability = "NoInputNoOutput";
+        var cap_ptr: [*c]const u8 = capability.ptr;
+        _ = c.dbus_message_iter_append_basic(&args, c.DBUS_TYPE_STRING, @ptrCast(&cap_ptr));
+
+        // Enviar
+        var err_buf: [64]u8 align(@alignOf(c.DBusError)) = undefined;
+        const err: *c.DBusError = @ptrCast(&err_buf);
+        c.dbus_error_init(err);
+        defer c.dbus_error_free(err);
+
+        const reply = c.dbus_connection_send_with_reply_and_block(
+            self.dbus.conn,
+            msg,
+            -1,
+            err,
+        );
+
+        if (c.dbus_error_is_set(err) != 0) {
+            std.debug.print("Erro ao registrar agente\n", .{});
+            return error.DBusCallFailed;
+        }
+
+        if (reply != null) {
+            _ = c.dbus_message_unref(reply);
+        }
+
+        // Tornar padrão
+        const msg2 = c.dbus_message_new_method_call(
+            "org.bluez",
+            "/org/bluez",
+            "org.bluez.AgentManager1",
+            "RequestDefaultAgent",
+        );
+        if (msg2 == null) return error.OutOfMemory;
+        defer _ = c.dbus_message_unref(msg2);
+
+        var args2: c.DBusMessageIter = undefined;
+        c.dbus_message_iter_init_append(msg2, &args2);
+        path_ptr = agent_path.ptr;
+        _ = c.dbus_message_iter_append_basic(&args2, c.DBUS_TYPE_OBJECT_PATH, @ptrCast(&path_ptr));
+
+        const reply2 = c.dbus_connection_send_with_reply_and_block(
+            self.dbus.conn,
+            msg2,
+            -1,
+            err,
+        );
+
+        if (reply2 != null) {
+            _ = c.dbus_message_unref(reply2);
+        }
+
+        std.debug.print("✅ Agente auto-accept registrado!\n", .{});
+    }
 };
 
 fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?Device {
@@ -274,6 +364,10 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
     var name: ?[]const u8 = null;
     var address: ?[]const u8 = null;
     var rssi: ?i16 = null;
+    var connected: bool = false; // NOVO
+    var paired: bool = false; // NOVO
+    var trusted: bool = false; // NOVO
+    var blocked: bool = false; // NOVO
 
     while (c.dbus_message_iter_get_arg_type(&prop_array) != c.DBUS_TYPE_INVALID) {
         var prop_dict: c.DBusMessageIter = undefined;
@@ -301,6 +395,24 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
             c.dbus_message_iter_get_basic(&variant, @ptrCast(&value));
             rssi = value;
         }
+        // NOVOS CAMPOS
+        else if (std.mem.eql(u8, prop_str, "Connected")) {
+            var value: u32 = undefined;
+            c.dbus_message_iter_get_basic(&variant, @ptrCast(&value));
+            connected = (value != 0);
+        } else if (std.mem.eql(u8, prop_str, "Paired")) {
+            var value: u32 = undefined;
+            c.dbus_message_iter_get_basic(&variant, @ptrCast(&value));
+            paired = (value != 0);
+        } else if (std.mem.eql(u8, prop_str, "Trusted")) {
+            var value: u32 = undefined;
+            c.dbus_message_iter_get_basic(&variant, @ptrCast(&value));
+            trusted = (value != 0);
+        } else if (std.mem.eql(u8, prop_str, "Blocked")) {
+            var value: u32 = undefined;
+            c.dbus_message_iter_get_basic(&variant, @ptrCast(&value));
+            blocked = (value != 0);
+        }
 
         _ = c.dbus_message_iter_next(&prop_array);
     }
@@ -314,12 +426,16 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
         try addressCopy.appendSlice(address.?);
         try addressCopy.append(0);
 
-        return Device.init(nomeCopy, addressCopy, rssi.?);
+        return Device.init(
+            nomeCopy,
+            addressCopy,
+            rssi.?,
+            connected,
+            paired,
+            trusted,
+            blocked,
+        );
     } else {
         return null;
     }
-
-    // if (name) |n| std.debug.print("  Nome: {s}\n", .{n});
-    // if (address) |a| std.debug.print("  Endereço: {s}\n", .{a});
-    // if (rssi) |r| std.debug.print("  RSSI: {d} dBm\n", .{r});
 }

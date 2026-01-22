@@ -15,6 +15,11 @@ const backButtonDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
 const devicesX: c_int = 355;
 const deviceColor: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
+const bordaX: c_int = 200;
+const bordaY: c_int = 150;
+const bordaWidth: c_int = WIDTH_RES - (bordaX * 2);
+const bordaHeight: c_int = HEIGHT_RES - (bordaY * 2);
+
 pub const BluetoothScene = struct {
     fonteBluetooth: ?*sdl.TTF_Font,
     goBackTexture: *sdl.SDL_Texture,
@@ -81,6 +86,7 @@ pub const BluetoothScene = struct {
                 self.devicesSur = ArrayList(*sdl.SDL_Surface).init(self.allocator);
 
                 for (self.btManager.devices.items) |value| {
+                    // self.btManager.printDeviceInfo(&value);
                     const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, value.name.items.ptr, deviceColor);
                     const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
 
@@ -139,11 +145,6 @@ pub const BluetoothScene = struct {
 
     fn renderDevicePairing(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         // BORDA
-        const bordaX: c_int = 200;
-        const bordaY: c_int = 150;
-        const bordaWidth: c_int = WIDTH_RES - (bordaX * 2);
-        const bordaHeight: c_int = HEIGHT_RES - (bordaY * 2);
-
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
         var deviceDest: sdl.SDL_Rect = .{
@@ -227,6 +228,9 @@ pub const BluetoothScene = struct {
 
         const naoX: c_int = bordaX + @divTrunc(bordaWidth, 4) - @divTrunc(naoWidth, 2);
         const naoY: c_int = (bordaY + bordaHeight) - 50 - (@divTrunc(naoHeight, 2));
+        //
+        // std.debug.print("Sim height: {d}\n", .{simHeight});
+        // std.debug.print("Sim width: {d}\n", .{simWidth});
 
         var naoDest: sdl.SDL_Rect = .{
             .x = naoX,
@@ -266,27 +270,65 @@ pub const BluetoothScene = struct {
                 const mouseX = event.button.x;
                 const mouseY = event.button.y;
 
-                const isBackbuttonHeight: bool = mouseY > backButtonDest.y and mouseY < backButtonDest.y + backButtonDest.h;
-                const isBackbuttonWidth: bool = mouseX > backButtonDest.x and mouseX < backButtonDest.x + backButtonDest.w;
+                if (self.selectedDevice == null) {
+                    const isBackbuttonHeight: bool = mouseY > backButtonDest.y and mouseY < backButtonDest.y + backButtonDest.h;
+                    const isBackbuttonWidth: bool = mouseX > backButtonDest.x and mouseX < backButtonDest.x + backButtonDest.w;
 
-                if (isBackbuttonHeight and isBackbuttonWidth) {
-                    sManager.setScene(sManager.homeScene) catch |err| {
-                        std.debug.print("Erro ao trocar de cena: {}\n", .{err});
-                        return;
-                    };
-                } else if (self.devicesTex.?.items.len >= 0) {
-                    var yPosIndex: u16 = 200;
-                    for (0..self.devicesTex.?.items.len) |i| {
-                        const textSurface: *sdl.SDL_Surface = self.devicesSur.?.items[i];
-                        const height: c_int = textSurface.*.h;
+                    if (isBackbuttonHeight and isBackbuttonWidth) {
+                        sManager.setScene(sManager.homeScene) catch |err| {
+                            std.debug.print("Erro ao trocar de cena: {}\n", .{err});
+                            return;
+                        };
+                    } else if (self.devicesTex.?.items.len >= 0) {
+                        var yPosIndex: u16 = 200;
+                        for (0..self.devicesTex.?.items.len) |i| {
+                            const textSurface: *sdl.SDL_Surface = self.devicesSur.?.items[i];
+                            const height: c_int = textSurface.*.h;
 
-                        if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex and mouseX > devicesX - 15 and mouseX < devicesX - 15 + 600) {
-                            self.selectedDevice = &self.btManager.devices.items[i];
+                            if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex and mouseX > devicesX - 15 and mouseX < devicesX - 15 + 600) {
+                                self.selectedDevice = &self.btManager.devices.items[i];
 
-                            break;
+                                break;
+                            }
+
+                            yPosIndex += 47;
+                        }
+                    }
+                } else {
+                    const simWidth: c_int = 55;
+                    const simHeight: c_int = 38;
+                    const simX: c_int = bordaX + @divTrunc(bordaWidth, 4) + @divTrunc(bordaWidth, 2) - @divTrunc(simWidth, 2);
+                    const simY: c_int = (bordaY + bordaHeight) - 50 - (@divTrunc(simHeight, 2));
+
+                    const naoWidth: c_int = 55;
+                    const naoHeight: c_int = 38;
+                    const naoX: c_int = bordaX + @divTrunc(bordaWidth, 4) - @divTrunc(naoWidth, 2);
+                    const naoY: c_int = (bordaY + bordaHeight) - 50 - (@divTrunc(naoHeight, 2));
+
+                    const isSim: bool = (mouseX >= simX and mouseX <= (simX + simWidth)) and (mouseY >= simY and mouseY <= (simY + simHeight));
+                    const isNao: bool = (mouseX >= naoX and mouseX <= (naoX + naoWidth)) and (mouseY >= naoY and mouseY <= (naoY + naoHeight));
+
+                    if (isSim) {
+                        if (self.selectedDevice.?.paired == false) {
+                            self.btManager.pairDevice(self.selectedDevice.?) catch |err| {
+                                std.debug.print("Erro ao parear no dispositivo: {}", .{err});
+                                return;
+                            };
+
+                            self.btManager.trustDevice(self.selectedDevice.?, false) catch |err| {
+                                std.debug.print("Erro ao confiar no dispositivo: {}", .{err});
+                                return;
+                            };
                         }
 
-                        yPosIndex += 47;
+                        self.btManager.connectDevice(self.selectedDevice.?) catch |err| {
+                            std.debug.print("Erro ao conectar dispositivo: {}", .{err});
+                            return;
+                        };
+
+                        self.selectedDevice = null;
+                    } else if (isNao) {
+                        self.selectedDevice = null;
                     }
                 }
             },
