@@ -73,6 +73,7 @@ pub const BluetoothScene = struct {
         // sem isso aqui dá merda!!
         if (self.lastTimeSeconds >= 3.0 and self.selectedDevice == null) {
             self.lastTimeSeconds = 0;
+            std.debug.print("List devices!\n", .{});
 
             self.btManager.listDevices() catch |err| {
                 std.debug.print("Erro ao ListDevices: {}\n", .{err});
@@ -139,6 +140,10 @@ pub const BluetoothScene = struct {
                 _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
                 yPosIndex += 47;
+
+                if (self.btManager.devices.items[i].connected) {
+                    // std.debug.print("Conectado: {s}\n", .{self.btManager.devices.items[i].name.items});
+                }
             }
         }
     }
@@ -359,6 +364,8 @@ pub const BluetoothScene = struct {
 
         self.devicesTex = ArrayList(*sdl.SDL_Texture).init(self.allocator);
         self.devicesSur = ArrayList(*sdl.SDL_Surface).init(self.allocator);
+
+        self.lastTimeSeconds = 100;
     }
 
     fn deinitDevicesTextureSurface(self: *BluetoothScene) void {

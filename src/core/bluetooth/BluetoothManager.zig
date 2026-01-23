@@ -363,11 +363,11 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
 
     var name: ?[]const u8 = null;
     var address: ?[]const u8 = null;
-    var rssi: ?i16 = null;
-    var connected: bool = false; // NOVO
-    var paired: bool = false; // NOVO
-    var trusted: bool = false; // NOVO
-    var blocked: bool = false; // NOVO
+    var rssi: ?i16 = null;  // Agora pode ser null
+    var connected: bool = false;
+    var paired: bool = false;
+    var trusted: bool = false;
+    var blocked: bool = false;
 
     while (c.dbus_message_iter_get_arg_type(&prop_array) != c.DBUS_TYPE_INVALID) {
         var prop_dict: c.DBusMessageIter = undefined;
@@ -394,9 +394,7 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
             var value: i16 = undefined;
             c.dbus_message_iter_get_basic(&variant, @ptrCast(&value));
             rssi = value;
-        }
-        // NOVOS CAMPOS
-        else if (std.mem.eql(u8, prop_str, "Connected")) {
+        } else if (std.mem.eql(u8, prop_str, "Connected")) {
             var value: u32 = undefined;
             c.dbus_message_iter_get_basic(&variant, @ptrCast(&value));
             connected = (value != 0);
@@ -417,7 +415,8 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
         _ = c.dbus_message_iter_next(&prop_array);
     }
 
-    if (name != null and address != null and rssi != null) {
+    // MUDANÇA CRÍTICA: aceita dispositivos mesmo sem RSSI, desde que tenha nome e endereço
+    if (name != null and address != null) {
         var nomeCopy = ArrayList(u8).init(self.allocator);
         try nomeCopy.appendSlice(name.?);
         try nomeCopy.append(0);
@@ -427,9 +426,9 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
         try addressCopy.append(0);
 
         return Device.init(
-            nomeCopy,
-            addressCopy,
-            rssi.?,
+            nomeCopy, 
+            addressCopy, 
+            rssi,  
             connected,
             paired,
             trusted,

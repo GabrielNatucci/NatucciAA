@@ -5,7 +5,7 @@ const ArrayList = std.array_list.Managed;
 pub const Device = struct {
     name: ArrayList(u8),
     address: ArrayList(u8),
-    rssi: i16,
+    rssi: ?i16,
     connected: bool, 
     paired: bool, 
     trusted: bool, 
@@ -14,7 +14,7 @@ pub const Device = struct {
     pub fn init(
         name: ArrayList(u8),
         address: ArrayList(u8),
-        rssi: i16,
+        rssi: ?i16,
         connected: bool,
         paired: bool,
         trusted: bool,
