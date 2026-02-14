@@ -13,6 +13,8 @@ pub const BluetoothManager = struct {
     adapter_path: [*c]const u8,
     allocator: std.mem.Allocator,
     devices: std.array_list.Managed(Device),
+    connected: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
+    connecting: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
 
     pub fn init(dbus: *DBus, allocator: std.mem.Allocator) BluetoothManager {
         const devices = ArrayList(Device).init(allocator);
@@ -144,9 +146,17 @@ pub const BluetoothManager = struct {
         self.devices.deinit();
     }
 
-    pub fn connectDevice(self: *BluetoothManager, device: *const Device) !void {
+    pub fn connectDeviceAsync(self: *BluetoothManager, device: *const Device) !void {
+        const thread = try std.Thread.spawn(.{}, connectDevice, .{ self, device });
+        thread.detach();
+    }
+
+    fn connectDevice(self: *BluetoothManager, device: *const Device) !void {
         const device_path = try self.buildDevicePath(device.address.items);
         defer self.allocator.free(device_path);
+
+        self.connected.store(false, .seq_cst);
+        self.connecting.store(true, .seq_cst);
 
         std.debug.print("Conectando ao dispositivo: {s}\n", .{device.name.items});
         std.debug.print("Path: {s}\n", .{device_path});
@@ -158,9 +168,14 @@ pub const BluetoothManager = struct {
             "org.bluez.Device1",
             "Connect",
         ) catch |err| {
+            self.connected.store(false, .seq_cst);
+            self.connecting.store(false, .seq_cst);
             std.debug.print("❌ ERRO D-BUS: {}\n", .{err});
             return err;
         };
+
+        self.connected.store(true, .seq_cst);
+        self.connecting.store(false, .seq_cst);
 
         std.debug.print("Conectado com sucesso!\n", .{});
     }
@@ -178,6 +193,8 @@ pub const BluetoothManager = struct {
             "Disconnect",
         );
 
+        self.connecting.store(false, .seq_cst);
+        self.connected.store(false, .seq_cst);
         std.debug.print("Desconectado com sucesso!\n", .{});
     }
 
@@ -363,7 +380,7 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
 
     var name: ?[]const u8 = null;
     var address: ?[]const u8 = null;
-    var rssi: ?i16 = null;  // Agora pode ser null
+    var rssi: ?i16 = null; // Agora pode ser null
     var connected: bool = false;
     var paired: bool = false;
     var trusted: bool = false;
@@ -426,9 +443,9 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
         try addressCopy.append(0);
 
         return Device.init(
-            nomeCopy, 
-            addressCopy, 
-            rssi,  
+            nomeCopy,
+            addressCopy,
+            rssi,
             connected,
             paired,
             trusted,

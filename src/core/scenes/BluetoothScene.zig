@@ -23,6 +23,7 @@ const bordaHeight: c_int = HEIGHT_RES - (bordaY * 2);
 pub const BluetoothScene = struct {
     fonteBluetooth: ?*sdl.TTF_Font,
     goBackTexture: *sdl.SDL_Texture,
+    connectedTexture: *sdl.SDL_Texture,
     btManager: *bt.BluetoothManager,
     lastTimeSeconds: f32,
     devicesTex: ?ArrayList(*sdl.SDL_Texture),
@@ -44,10 +45,12 @@ pub const BluetoothScene = struct {
         }
 
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
+        const bluetoothConnecetTexture = try textureUtil.loadSDLTexture(renderer, "res/images/btIcon.png");
 
         return .{
             .fonteBluetooth = fonte,
             .goBackTexture = backTexture,
+            .connectedTexture = bluetoothConnecetTexture,
             .btManager = bluetooth,
             .lastTimeSeconds = 0,
             .devicesTex = null,
@@ -66,6 +69,10 @@ pub const BluetoothScene = struct {
         _ = active;
         self.lastTimeSeconds += delta_time;
         self.listarDispositivos(renderer);
+
+        if (self.btManager.connected.load(.seq_cst) == true) {
+            self.selectedDevice = null;
+        }
     }
 
     fn listarDispositivos(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
@@ -73,7 +80,6 @@ pub const BluetoothScene = struct {
         // sem isso aqui dá merda!!
         if (self.lastTimeSeconds >= 3.0 and self.selectedDevice == null) {
             self.lastTimeSeconds = 0;
-            std.debug.print("List devices!\n", .{});
 
             self.btManager.listDevices() catch |err| {
                 std.debug.print("Erro ao ListDevices: {}\n", .{err});
@@ -111,8 +117,10 @@ pub const BluetoothScene = struct {
     pub fn render(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         if (self.selectedDevice == null) {
             self.renderDevices(renderer);
-        } else {
+        } else if (self.btManager.connected.load(.seq_cst) == false and self.btManager.connecting.load(.seq_cst) == false) {
             self.renderDevicePairing(renderer);
+        } else if (self.btManager.connecting.load(.seq_cst) == true) {
+            self.renderDeviceConnecting(renderer);
         }
 
         self.renderBoilerplate(renderer);
@@ -142,7 +150,8 @@ pub const BluetoothScene = struct {
                 yPosIndex += 47;
 
                 if (self.btManager.devices.items[i].connected) {
-                    // std.debug.print("Conectado: {s}\n", .{self.btManager.devices.items[i].name.items});
+                    var connectedTextDest: sdl.SDL_Rect = .{ .x = devicesX + 600 - 60, .y = yPosIndex - height - 8, .w = height, .h = height };
+                    _ = sdl.SDL_RenderCopy(renderer, self.connectedTexture, null, &connectedTextDest);
                 }
             }
         }
@@ -233,9 +242,6 @@ pub const BluetoothScene = struct {
 
         const naoX: c_int = bordaX + @divTrunc(bordaWidth, 4) - @divTrunc(naoWidth, 2);
         const naoY: c_int = (bordaY + bordaHeight) - 50 - (@divTrunc(naoHeight, 2));
-        //
-        // std.debug.print("Sim height: {d}\n", .{simHeight});
-        // std.debug.print("Sim width: {d}\n", .{simWidth});
 
         var naoDest: sdl.SDL_Rect = .{
             .x = naoX,
@@ -245,6 +251,20 @@ pub const BluetoothScene = struct {
         };
 
         _ = sdl.SDL_RenderCopy(renderer, naoTexture, null, &naoDest);
+    }
+
+    fn renderDeviceConnecting(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
+        _ = self;
+
+        // const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+
+        var deviceDest: sdl.SDL_Rect = .{
+            .x = bordaX,
+            .y = bordaY,
+            .w = bordaWidth,
+            .h = bordaHeight,
+        };
+        _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
     }
 
     // isso aqui é pra renderizar as coisas que sempre vão aparecer, botão de voltar e o nome da cena
@@ -293,6 +313,15 @@ pub const BluetoothScene = struct {
                             if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex and mouseX > devicesX - 15 and mouseX < devicesX - 15 + 600) {
                                 self.selectedDevice = &self.btManager.devices.items[i];
 
+                                if (self.selectedDevice.?.connected) {
+                                    self.btManager.disconnectDevice(self.selectedDevice.?) catch |err| {
+                                        std.debug.print("Erro ao desconectar dispositivo: {}\n", .{err});
+                                        return;
+                                    };
+
+                                    self.selectedDevice = null;
+                                }
+
                                 break;
                             }
 
@@ -326,12 +355,12 @@ pub const BluetoothScene = struct {
                             };
                         }
 
-                        self.btManager.connectDevice(self.selectedDevice.?) catch |err| {
+                        self.btManager.connectDeviceAsync(self.selectedDevice.?) catch |err| {
                             std.debug.print("Erro ao conectar dispositivo: {}", .{err});
                             return;
                         };
 
-                        self.selectedDevice = null;
+                        // self.selectedDevice = null;
                     } else if (isNao) {
                         self.selectedDevice = null;
                     }
@@ -396,6 +425,7 @@ pub const BluetoothScene = struct {
         }
 
         sdl.SDL_DestroyTexture(self.goBackTexture);
+        sdl.SDL_DestroyTexture(self.connectedTexture);
 
         self.deinitDevicesTextureSurface();
     }
