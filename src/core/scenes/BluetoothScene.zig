@@ -53,8 +53,9 @@ pub const BluetoothScene = struct {
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
         const bluetoothConnecetTexture = try textureUtil.loadSDLTexture(renderer, "res/images/btIcon.png");
 
+        const textX = @divTrunc(WIDTH_RES, 2);
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
-        const pageNameTemp: Text = try Text.init("Bluetooth", renderer, allocator, 32, color);
+        const pageNameTemp: Text = try Text.init("Bluetooth", renderer, allocator, 32, color, textX, 10);
 
         return .{
             .fonteBluetooth = fonte,
@@ -281,10 +282,7 @@ pub const BluetoothScene = struct {
     fn renderBoilerplate(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
-        const width: c_int = self.pageName.width;
-        const textX = @divTrunc(WIDTH_RES, 2) - @divTrunc(width, 2);
-
-        self.pageName.render(color, textX, 10);
+        self.pageName.render(color);
 
         _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backButtonDest);
     }

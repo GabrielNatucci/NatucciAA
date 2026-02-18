@@ -6,6 +6,8 @@ pub const Text = struct {
     allocator: std.mem.Allocator,
     texture: *sdl.SDL_Texture,
     text: ArrayList(u8),
+    x: c_int,
+    y: c_int,
     width: c_int,
     height: c_int,
     renderer: *sdl.SDL_Renderer,
@@ -16,6 +18,8 @@ pub const Text = struct {
         allocator: std.mem.Allocator,
         fontSize: c_int,
         color: sdl.SDL_Color,
+        xIn: c_int,
+        y: c_int,
     ) !Text {
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", fontSize);
         if (fonte == null) return error.FonteNaoFoiCarregada;
@@ -37,6 +41,7 @@ pub const Text = struct {
 
         const width: c_int = textSurface.*.w;
         const height: c_int = textSurface.*.h;
+        const xtext: c_int = xIn - @divTrunc(width, 2);
 
         return Text{
             .allocator = allocator,
@@ -45,6 +50,8 @@ pub const Text = struct {
             .text = textTemp,
             .renderer = renderer,
             .texture = textTexture.?,
+            .x = xtext,
+            .y = y,
         };
     }
 
@@ -53,10 +60,10 @@ pub const Text = struct {
         sdl.SDL_DestroyTexture(self.texture);
     }
 
-    pub fn render(self: Text, color: sdl.SDL_Color, x: c_int, y: c_int) void {
+    pub fn render(self: Text, color: sdl.SDL_Color) void {
         _ = color;
 
-        var dest: sdl.SDL_Rect = .{ .x = x, .y = y, .w = self.width, .h = self.height };
+        var dest: sdl.SDL_Rect = .{ .x = self.x, .y = self.y, .w = self.width, .h = self.height };
         _ = sdl.SDL_RenderCopy(self.renderer, self.texture, null, &dest);
     }
 };
