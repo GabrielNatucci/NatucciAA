@@ -63,7 +63,7 @@
         //},
         .sdl2 = .{
             .url = "https://github.com/MasterQ32/SDL.zig/archive/refs/heads/master.tar.gz",
-            .hash = "SDL2-0.0.0-yMCQioGqBABWVG7BzbU3WEU6dyYDF0EojBS8CZRlFw-7",
+            .hash = "SDL2-0.0.0-yMCQivWqBABTfB8opAADsLCGxxu20vijLBW2hHdpTR-L",
         }
     },
     // Specifies the set of files and directories that are included in this package.

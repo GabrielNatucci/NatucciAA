@@ -36,13 +36,13 @@ pub const BluetoothManager = struct {
 
     pub fn printDeviceInfo(self: *BluetoothManager, device: *const Device) void {
         _ = self;
-        std.debug.print("\n📱 Dispositivo: {s}\n", .{device.name.items});
-        std.debug.print("   MAC: {s}\n", .{device.address.items});
-        std.debug.print("   RSSI: {d} dBm\n", .{device.rssi});
-        std.debug.print("   🔌 Conectado: {s}\n", .{if (device.connected) "SIM" else "NÃO"});
-        std.debug.print("   🤝 Pareado: {s}\n", .{if (device.paired) "SIM" else "NÃO"});
-        std.debug.print("   ✅ Confiável: {s}\n", .{if (device.trusted) "SIM" else "NÃO"});
-        std.debug.print("   🚫 Bloqueado: {s}\n", .{if (device.blocked) "SIM" else "NÃO"});
+        std.debug.print("\nDispositivo: {s}\n", .{device.name.items});
+        std.debug.print("  MAC: {s}\n", .{device.address.items});
+        std.debug.print("  RSSI: {d} dBm\n", .{device.rssi});
+        std.debug.print("  Conectado: {s}\n", .{if (device.connected) "SIM" else "NÃO"});
+        std.debug.print("  Pareado: {s}\n", .{if (device.paired) "SIM" else "NÃO"});
+        std.debug.print("  Confiável: {s}\n", .{if (device.trusted) "SIM" else "NÃO"});
+        std.debug.print("  Bloqueado: {s}\n", .{if (device.blocked) "SIM" else "NÃO"});
     }
 
     pub fn startDiscovery(self: *BluetoothManager) !void {

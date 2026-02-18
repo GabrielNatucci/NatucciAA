@@ -1,16 +1,17 @@
-const std = @import("std");
-const sdl = @import("../../sdlImport/Sdl.zig").sdl;
-const Scene = @import("Scene.zig");
-const SceneManager = @import("../SceneManager.zig").SceneManager;
-const timeUtil = @import("../../util/TimeUtil.zig");
-const textureUtil = @import("../../util/SDLTextureUtil.zig");
 const ArrayList = std.array_list.Managed;
-const Device = @import("../bluetooth/Device.zig").Device;
-const bt = @import("../../core/bluetooth/BluetoothManager.zig");
 
+const bt = @import("../../core/bluetooth/BluetoothManager.zig");
 const WIDTH_RES = @import("../../main.zig").WIDTH;
 const HEIGHT_RES = @import("../../main.zig").HEIGHT;
+const sdl = @import("../../sdlImport/Sdl.zig").sdl;
+const textureUtil = @import("../../util/SDLTextureUtil.zig");
+const timeUtil = @import("../../util/TimeUtil.zig");
+const Device = @import("../bluetooth/Device.zig").Device;
+const SceneManager = @import("../SceneManager.zig").SceneManager;
+const Scene = @import("Scene.zig");
+const Text = @import("./components/Text.zig").Text;
 
+const std = @import("std");
 const backButtonDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
 const devicesX: c_int = 355;
 const deviceColor: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
@@ -23,6 +24,7 @@ const bordaHeight: c_int = HEIGHT_RES - (bordaY * 2);
 pub const BluetoothScene = struct {
     fonteBluetooth: ?*sdl.TTF_Font,
     goBackTexture: *sdl.SDL_Texture,
+    pageName: Text,
     connectedTexture: *sdl.SDL_Texture,
     btManager: *bt.BluetoothManager,
     lastTimeSeconds: f32,
@@ -31,7 +33,11 @@ pub const BluetoothScene = struct {
     allocator: std.mem.Allocator,
     selectedDevice: ?*Device,
 
-    pub fn create(renderer: *sdl.SDL_Renderer, bluetooth: *bt.BluetoothManager, allocator: std.mem.Allocator) !BluetoothScene {
+    pub fn create(
+        renderer: *sdl.SDL_Renderer,
+        bluetooth: *bt.BluetoothManager,
+        allocator: std.mem.Allocator,
+    ) !BluetoothScene {
         std.debug.print("\nInicializando bluetoothScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 32);
@@ -47,6 +53,9 @@ pub const BluetoothScene = struct {
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
         const bluetoothConnecetTexture = try textureUtil.loadSDLTexture(renderer, "res/images/btIcon.png");
 
+        const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+        const pageNameTemp: Text = try Text.init("Bluetooth", renderer, allocator, 32, color);
+
         return .{
             .fonteBluetooth = fonte,
             .goBackTexture = backTexture,
@@ -57,6 +66,7 @@ pub const BluetoothScene = struct {
             .devicesSur = null,
             .allocator = allocator,
             .selectedDevice = null,
+            .pageName = pageNameTemp,
         };
     }
 
@@ -271,21 +281,11 @@ pub const BluetoothScene = struct {
     fn renderBoilerplate(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
-        const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, "Bluetooth", color);
-        if (textSurface == null) return;
-        defer sdl.SDL_FreeSurface(textSurface);
-
-        const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
-        if (textTexture == null) return;
-        defer sdl.SDL_DestroyTexture(textTexture);
-
-        const width: c_int = textSurface.*.w;
-        const height: c_int = textSurface.*.h;
-
+        const width: c_int = self.pageName.width;
         const textX = @divTrunc(WIDTH_RES, 2) - @divTrunc(width, 2);
 
-        var bluetoothDest: sdl.SDL_Rect = .{ .x = textX, .y = 10, .w = width, .h = height };
-        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &bluetoothDest);
+        self.pageName.render(color, textX, 10);
+
         _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backButtonDest);
     }
 
@@ -426,6 +426,8 @@ pub const BluetoothScene = struct {
 
         sdl.SDL_DestroyTexture(self.goBackTexture);
         sdl.SDL_DestroyTexture(self.connectedTexture);
+
+        self.pageName.deinit();
 
         self.deinitDevicesTextureSurface();
     }
