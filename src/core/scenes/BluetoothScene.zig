@@ -30,6 +30,7 @@ pub const BluetoothScene = struct {
     lastTimeSeconds: f32,
     devicesTex: ?ArrayList(*sdl.SDL_Texture),
     devicesSur: ?ArrayList(*sdl.SDL_Surface),
+    devicesText: ?ArrayList(Text),
     allocator: std.mem.Allocator,
     selectedDevice: ?*Device,
 
@@ -65,6 +66,7 @@ pub const BluetoothScene = struct {
             .lastTimeSeconds = 0,
             .devicesTex = null,
             .devicesSur = null,
+            .devicesText = null,
             .allocator = allocator,
             .selectedDevice = null,
             .pageName = pageNameTemp,
@@ -97,19 +99,22 @@ pub const BluetoothScene = struct {
                 return;
             };
 
+            var yPosIndex: u16 = 200;
+
             if (self.btManager.devices.items.len >= 0) {
                 self.deinitDevicesTextureSurface();
 
                 self.devicesTex = ArrayList(*sdl.SDL_Texture).init(self.allocator);
                 self.devicesSur = ArrayList(*sdl.SDL_Surface).init(self.allocator);
+                self.devicesText = ArrayList(Text).init(self.allocator);
 
                 for (self.btManager.devices.items) |value| {
                     // self.btManager.printDeviceInfo(&value);
                     const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, value.name.items.ptr, deviceColor);
-                    const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
-
                     if (textSurface == null) return;
+                    const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
                     if (textTexture == null) return;
+
 
                     self.devicesTex.?.append(textTexture.?) catch |err| {
                         std.debug.print("Erro ao dar append DEVICES TEXTURE: {}\n", .{err});
@@ -118,6 +123,20 @@ pub const BluetoothScene = struct {
 
                     self.devicesSur.?.append(textSurface.?) catch |err| {
                         std.debug.print("Erro ao dar append DEVICES SURFACE: {}\n", .{err});
+                        return;
+                    };
+                    yPosIndex += 47;
+
+                    const textX = devicesX + 600 - 60;
+                    const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+
+                    const pageNameTemp: Text = Text.init(value.name.items.ptr, renderer, self.allocator, 32, color, textX, yPosIndex) catch |err| {
+                        std.debug.print("Erro ao criar texto de device: {}", .{err});
+                        return;
+                    };
+
+                    self.devicesText.?.append(pageNameTemp) catch |err| {
+                        std.debug.print("Erro ao dar append DEVICES TEXT: {}\n", .{err});
                         return;
                     };
                 }
@@ -413,6 +432,15 @@ pub const BluetoothScene = struct {
             list.deinit();
             self.devicesSur = null;
         }
+
+        if (self.devicesText) |*list| {
+            for (list.items) |current| {
+                current.deinit();
+            }
+
+            list.deinit();
+            self.devicesText = null;
+        }
     }
 
     pub fn deinit(self: *BluetoothScene) void {
@@ -426,7 +454,6 @@ pub const BluetoothScene = struct {
         sdl.SDL_DestroyTexture(self.connectedTexture);
 
         self.pageName.deinit();
-
         self.deinitDevicesTextureSurface();
     }
 };
