@@ -3,6 +3,7 @@ const ArrayList = std.array_list.Managed;
 const bt = @import("../../core/bluetooth/BluetoothManager.zig");
 const WIDTH_RES = @import("../../main.zig").WIDTH;
 const HEIGHT_RES = @import("../../main.zig").HEIGHT;
+const DEVICE_BOX_LENGTH: c_int = 600;
 const sdl = @import("../../sdlImport/Sdl.zig").sdl;
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
 const timeUtil = @import("../../util/TimeUtil.zig");
@@ -28,8 +29,6 @@ pub const BluetoothScene = struct {
     connectedTexture: *sdl.SDL_Texture,
     btManager: *bt.BluetoothManager,
     lastTimeSeconds: f32,
-    devicesTex: ?ArrayList(*sdl.SDL_Texture),
-    devicesSur: ?ArrayList(*sdl.SDL_Surface),
     devicesText: ?ArrayList(Text),
     allocator: std.mem.Allocator,
     selectedDevice: ?*Device,
@@ -64,8 +63,6 @@ pub const BluetoothScene = struct {
             .connectedTexture = bluetoothConnecetTexture,
             .btManager = bluetooth,
             .lastTimeSeconds = 0,
-            .devicesTex = null,
-            .devicesSur = null,
             .devicesText = null,
             .allocator = allocator,
             .selectedDevice = null,
@@ -99,35 +96,18 @@ pub const BluetoothScene = struct {
                 return;
             };
 
-            var yPosIndex: u16 = 200;
+            var yPosIndex: u16 = 154;
 
             if (self.btManager.devices.items.len >= 0) {
                 self.deinitDevicesTextureSurface();
 
-                self.devicesTex = ArrayList(*sdl.SDL_Texture).init(self.allocator);
-                self.devicesSur = ArrayList(*sdl.SDL_Surface).init(self.allocator);
                 self.devicesText = ArrayList(Text).init(self.allocator);
 
                 for (self.btManager.devices.items) |value| {
                     // self.btManager.printDeviceInfo(&value);
-                    const textSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, value.name.items.ptr, deviceColor);
-                    if (textSurface == null) return;
-                    const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
-                    if (textTexture == null) return;
-
-
-                    self.devicesTex.?.append(textTexture.?) catch |err| {
-                        std.debug.print("Erro ao dar append DEVICES TEXTURE: {}\n", .{err});
-                        return;
-                    };
-
-                    self.devicesSur.?.append(textSurface.?) catch |err| {
-                        std.debug.print("Erro ao dar append DEVICES SURFACE: {}\n", .{err});
-                        return;
-                    };
                     yPosIndex += 47;
 
-                    const textX = devicesX + 600 - 60;
+                    const textX = devicesX + @divTrunc(DEVICE_BOX_LENGTH, 2);
                     const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
                     const pageNameTemp: Text = Text.init(value.name.items.ptr, renderer, self.allocator, 32, color, textX, yPosIndex) catch |err| {
@@ -159,28 +139,25 @@ pub const BluetoothScene = struct {
     fn renderDevices(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         var yPosIndex: u16 = 200;
 
-        if (self.devicesTex.?.items.len >= 0) {
-            for (0..self.devicesTex.?.items.len) |i| {
-                const textSurface: *sdl.SDL_Surface = self.devicesSur.?.items[i];
-                const textTexture: *sdl.SDL_Texture = self.devicesTex.?.items[i];
-
-                const width: c_int = textSurface.*.w;
-                const height: c_int = textSurface.*.h;
-
-                var bluetoothDest: sdl.SDL_Rect = .{ .x = devicesX, .y = yPosIndex, .w = width, .h = height };
+        if (self.devicesText.?.items.len >= 0) {
+            for (0..self.devicesText.?.items.len) |i| {
+                const deviceText: Text = self.devicesText.?.items[i];
 
                 // TEXTO
-                _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &bluetoothDest);
-                _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+                const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+                deviceText.render(color);
+
+                const height: c_int = deviceText.height;
 
                 // BORDA
-                var deviceDest: sdl.SDL_Rect = .{ .x = devicesX - 15, .y = yPosIndex - 5, .w = 600, .h = textSurface.*.h + 10 };
+                _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+                var deviceDest: sdl.SDL_Rect = .{ .x = devicesX - 15, .y = yPosIndex - 5, .w = DEVICE_BOX_LENGTH, .h = height + 10 };
                 _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
                 yPosIndex += 47;
 
                 if (self.btManager.devices.items[i].connected) {
-                    var connectedTextDest: sdl.SDL_Rect = .{ .x = devicesX + 600 - 60, .y = yPosIndex - height - 8, .w = height, .h = height };
+                    var connectedTextDest: sdl.SDL_Rect = .{ .x = devicesX + DEVICE_BOX_LENGTH - 60, .y = yPosIndex - height - 8, .w = height, .h = height };
                     _ = sdl.SDL_RenderCopy(renderer, self.connectedTexture, null, &connectedTextDest);
                 }
             }
@@ -321,13 +298,13 @@ pub const BluetoothScene = struct {
                             std.debug.print("Erro ao trocar de cena: {}\n", .{err});
                             return;
                         };
-                    } else if (self.devicesTex.?.items.len >= 0) {
+                    } else if (self.devicesText.?.items.len >= 0) {
                         var yPosIndex: u16 = 200;
-                        for (0..self.devicesTex.?.items.len) |i| {
-                            const textSurface: *sdl.SDL_Surface = self.devicesSur.?.items[i];
-                            const height: c_int = textSurface.*.h;
+                        for (0..self.devicesText.?.items.len) |i| {
+                            const text: Text = self.devicesText.?.items[i];
+                            const height: c_int = text.height;
 
-                            if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex and mouseX > devicesX - 15 and mouseX < devicesX - 15 + 600) {
+                            if (mouseY > yPosIndex - 5 and mouseY < height + 10 + yPosIndex and mouseX > devicesX - 15 and mouseX < devicesX - 15 + DEVICE_BOX_LENGTH) {
                                 self.selectedDevice = &self.btManager.devices.items[i];
 
                                 if (self.selectedDevice.?.connected) {
@@ -408,31 +385,12 @@ pub const BluetoothScene = struct {
             return;
         };
 
-        self.devicesTex = ArrayList(*sdl.SDL_Texture).init(self.allocator);
-        self.devicesSur = ArrayList(*sdl.SDL_Surface).init(self.allocator);
+        self.devicesText = ArrayList(Text).init(self.allocator);
 
         self.lastTimeSeconds = 100;
     }
 
     fn deinitDevicesTextureSurface(self: *BluetoothScene) void {
-        if (self.devicesTex) |*list| {
-            for (list.items) |current| {
-                sdl.SDL_DestroyTexture(current);
-            }
-
-            list.deinit();
-            self.devicesTex = null;
-        }
-
-        if (self.devicesSur) |*list| {
-            for (list.items) |current| {
-                sdl.SDL_FreeSurface(current);
-            }
-
-            list.deinit();
-            self.devicesSur = null;
-        }
-
         if (self.devicesText) |*list| {
             for (list.items) |current| {
                 current.deinit();
