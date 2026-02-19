@@ -18,7 +18,7 @@ pub const Text = struct {
         allocator: std.mem.Allocator,
         fontSize: c_int,
         color: sdl.SDL_Color,
-        xIn: c_int,
+        x: c_int,
         y: c_int,
     ) !Text {
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", fontSize);
@@ -41,7 +41,8 @@ pub const Text = struct {
 
         const width: c_int = textSurface.*.w;
         const height: c_int = textSurface.*.h;
-        const xtext: c_int = xIn - @divTrunc(width, 2);
+        const xtext: c_int = x - @divTrunc(width, 2); // para deixar o texto ajustado no centro
+        const ytext: c_int = y - @divTrunc(height, 2); // para deixar o texto ajustado no centro
 
         return Text{
             .allocator = allocator,
@@ -51,7 +52,7 @@ pub const Text = struct {
             .renderer = renderer,
             .texture = textTexture.?,
             .x = xtext,
-            .y = y,
+            .y = ytext,
         };
     }
 

@@ -28,6 +28,8 @@ pub const BluetoothScene = struct {
     fonteBluetooth: ?*sdl.TTF_Font,
     goBackTexture: *sdl.SDL_Texture,
     pageName: Text,
+    querConectarSim: Text,
+    querConectarNao: Text,
     connectedTexture: *sdl.SDL_Texture,
     btManager: *bt.BluetoothManager,
     lastTimeSeconds: f32,
@@ -59,6 +61,14 @@ pub const BluetoothScene = struct {
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
         const pageNameTemp: Text = try Text.init("Bluetooth", renderer, allocator, 32, color, textX, 10);
 
+        const simX: c_int = bordaX + (@divTrunc(bordaWidth, 4) * 3);
+        const simY: c_int = (bordaY + bordaHeight) - 50;
+        const naoX: c_int = bordaX + @divTrunc(bordaWidth, 4);
+        const naoY: c_int = (bordaY + bordaHeight) - 50;
+
+        const simText: Text = try Text.init("Sim", renderer, allocator, 32, color, simX, simY);
+        const naoText: Text = try Text.init("Nao", renderer, allocator, 32, color, naoX, naoY);
+
         return .{
             .fonteBluetooth = fonte,
             .goBackTexture = backTexture,
@@ -69,6 +79,8 @@ pub const BluetoothScene = struct {
             .allocator = allocator,
             .selectedDevice = null,
             .pageName = pageNameTemp,
+            .querConectarSim = simText,
+            .querConectarNao = naoText,
         };
     }
 
@@ -98,7 +110,7 @@ pub const BluetoothScene = struct {
                 return;
             };
 
-            var yPosIndex: u16 = 154;
+            var yPosIndex: u16 = 173;
 
             if (self.btManager.devices.items.len >= 0) {
                 self.deinitDevicesTextureSurface();
@@ -175,8 +187,9 @@ pub const BluetoothScene = struct {
         };
         _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
+        // NOME DISPOSITIVO
         const deviceX: c_int = bordaX + @divTrunc(bordaWidth, 2);
-        const deviceY: c_int = bordaY + 10;
+        const deviceY: c_int = bordaY + 25;
 
         const deviceName: Text = Text.init(self.selectedDevice.?.name.items.ptr, renderer, self.allocator, 32, WHITE, deviceX, deviceY) catch |err| {
             std.debug.print("Erro ao criar texto de device: {}", .{err});
@@ -207,45 +220,9 @@ pub const BluetoothScene = struct {
 
         _ = sdl.SDL_RenderCopy(renderer, querConectarTexture, null, &querConectarDest);
 
-        const simText = sdl.TTF_RenderText_Blended(self.fonteBluetooth, "Sim", color) orelse return;
-        const naoText = sdl.TTF_RenderText_Blended(self.fonteBluetooth, "Nao", color) orelse return;
-        defer sdl.SDL_FreeSurface(simText);
-        defer sdl.SDL_FreeSurface(naoText);
-
-        const simTexture = sdl.SDL_CreateTextureFromSurface(renderer, simText) orelse return;
-        const naoTexture = sdl.SDL_CreateTextureFromSurface(renderer, naoText) orelse return;
-        defer sdl.SDL_DestroyTexture(simTexture);
-        defer sdl.SDL_DestroyTexture(naoTexture);
-
-        const simWidth: c_int = simText.*.w;
-        const simHeight: c_int = simText.*.h;
-
-        const simX: c_int = bordaX + @divTrunc(bordaWidth, 4) + @divTrunc(bordaWidth, 2) - @divTrunc(simWidth, 2);
-        const simY: c_int = (bordaY + bordaHeight) - 50 - (@divTrunc(simHeight, 2));
-
-        var simDest: sdl.SDL_Rect = .{
-            .x = simX,
-            .y = simY,
-            .w = simWidth,
-            .h = simHeight,
-        };
-
-        _ = sdl.SDL_RenderCopy(renderer, simTexture, null, &simDest);
-
-        const naoWidth: c_int = naoText.*.w;
-        const naoHeight: c_int = naoText.*.h;
-
-        const naoX: c_int = bordaX + @divTrunc(bordaWidth, 4) - @divTrunc(naoWidth, 2);
-        const naoY: c_int = (bordaY + bordaHeight) - 50 - (@divTrunc(naoHeight, 2));
-
-        var naoDest: sdl.SDL_Rect = .{
-            .x = naoX,
-            .y = naoY,
-            .w = naoWidth,
-            .h = naoHeight,
-        };
-
-        _ = sdl.SDL_RenderCopy(renderer, naoTexture, null, &naoDest);
+        // QUER CONECTAR, SIM - NAO?
+        self.querConectarSim.render();
+        self.querConectarNao.render();
     }
 
     fn renderDeviceConnecting(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
@@ -396,6 +373,8 @@ pub const BluetoothScene = struct {
         sdl.SDL_DestroyTexture(self.connectedTexture);
 
         self.pageName.deinit();
+        self.querConectarSim.deinit();
+        self.querConectarNao.deinit();
         self.deinitDevicesTextureSurface();
     }
 };
