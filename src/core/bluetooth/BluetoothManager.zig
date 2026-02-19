@@ -35,6 +35,7 @@ pub const BluetoothManager = struct {
     }
 
     pub fn printDeviceInfo(self: *BluetoothManager, device: *const Device) void {
+        // borked
         _ = self;
         std.debug.print("\nDispositivo: {s}\n", .{device.name.items});
         std.debug.print("  MAC: {s}\n", .{device.address.items});

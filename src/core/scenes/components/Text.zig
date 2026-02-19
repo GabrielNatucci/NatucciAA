@@ -60,9 +60,7 @@ pub const Text = struct {
         sdl.SDL_DestroyTexture(self.texture);
     }
 
-    pub fn render(self: Text, color: sdl.SDL_Color) void {
-        _ = color;
-
+    pub fn render(self: Text) void {
         var dest: sdl.SDL_Rect = .{ .x = self.x, .y = self.y, .w = self.width, .h = self.height };
         _ = sdl.SDL_RenderCopy(self.renderer, self.texture, null, &dest);
     }

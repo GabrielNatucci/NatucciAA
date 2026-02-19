@@ -12,6 +12,8 @@ const SceneManager = @import("../SceneManager.zig").SceneManager;
 const Scene = @import("Scene.zig");
 const Text = @import("./components/Text.zig").Text;
 
+const WHITE: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+
 const std = @import("std");
 const backButtonDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
 const devicesX: c_int = 355;
@@ -104,13 +106,11 @@ pub const BluetoothScene = struct {
                 self.devicesText = ArrayList(Text).init(self.allocator);
 
                 for (self.btManager.devices.items) |value| {
-                    // self.btManager.printDeviceInfo(&value);
+                    // self.btManager.printDeviceInfo(&value); // borked
                     yPosIndex += 47;
 
                     const textX = devicesX + @divTrunc(DEVICE_BOX_LENGTH, 2);
-                    const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
-
-                    const pageNameTemp: Text = Text.init(value.name.items.ptr, renderer, self.allocator, 32, color, textX, yPosIndex) catch |err| {
+                    const pageNameTemp: Text = Text.init(value.name.items.ptr, renderer, self.allocator, 32, WHITE, textX, yPosIndex) catch |err| {
                         std.debug.print("Erro ao criar texto de device: {}", .{err});
                         return;
                     };
@@ -144,8 +144,7 @@ pub const BluetoothScene = struct {
                 const deviceText: Text = self.devicesText.?.items[i];
 
                 // TEXTO
-                const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
-                deviceText.render(color);
+                deviceText.render();
 
                 const height: c_int = deviceText.height;
 
@@ -176,27 +175,16 @@ pub const BluetoothScene = struct {
         };
         _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
 
-        const deviceSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, self.selectedDevice.?.name.items.ptr, color) orelse return;
-        defer sdl.SDL_FreeSurface(deviceSurface);
+        const deviceX: c_int = bordaX + @divTrunc(bordaWidth, 2);
+        const deviceY: c_int = bordaY + 10;
 
-        const deviceTexture = sdl.SDL_CreateTextureFromSurface(renderer, deviceSurface) orelse return;
-        defer sdl.SDL_DestroyTexture(deviceTexture);
-
-        const deviceWidth: c_int = deviceSurface.*.w;
-        const deviceHeight: c_int = deviceSurface.*.h;
-
-        const deviceX: c_int = bordaX + @divTrunc(bordaWidth, 2) - @divTrunc(deviceWidth, 2);
-        const deviceY: c_int = bordaY - (@divTrunc(deviceHeight, 2)) + 25;
-
-        var deviceNameDest: sdl.SDL_Rect = .{
-            .x = deviceX,
-            .y = deviceY,
-            .w = deviceWidth,
-            .h = deviceHeight,
+        const deviceName: Text = Text.init(self.selectedDevice.?.name.items.ptr, renderer, self.allocator, 32, WHITE, deviceX, deviceY) catch |err| {
+            std.debug.print("Erro ao criar texto de device: {}", .{err});
+            return;
         };
 
-        _ = sdl.SDL_RenderCopy(renderer, deviceTexture, null, &deviceNameDest);
-        _ = sdl.SDL_RenderDrawRect(renderer, &deviceDest);
+        deviceName.render();
+        defer deviceName.deinit();
 
         const querConectarText = sdl.TTF_RenderText_Blended(self.fonteBluetooth, "Deseja se conectar a esse dispositivo?", color) orelse return;
         defer sdl.SDL_FreeSurface(querConectarText);
@@ -263,8 +251,6 @@ pub const BluetoothScene = struct {
     fn renderDeviceConnecting(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         _ = self;
 
-        // const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
-
         var deviceDest: sdl.SDL_Rect = .{
             .x = bordaX,
             .y = bordaY,
@@ -276,9 +262,7 @@ pub const BluetoothScene = struct {
 
     // isso aqui é pra renderizar as coisas que sempre vão aparecer, botão de voltar e o nome da cena
     fn renderBoilerplate(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
-        const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
-
-        self.pageName.render(color);
+        self.pageName.render();
 
         _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &backButtonDest);
     }
