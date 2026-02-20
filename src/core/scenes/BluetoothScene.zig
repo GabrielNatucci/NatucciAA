@@ -59,7 +59,7 @@ pub const BluetoothScene = struct {
 
         const textX = @divTrunc(WIDTH_RES, 2);
         const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
-        const pageNameTemp: Text = try Text.init("Bluetooth", renderer, allocator, 32, color, textX, 10);
+        const pageNameTemp: Text = try Text.init("Bluetooth", renderer, allocator, 32, color, textX, 30);
 
         const simX: c_int = bordaX + (@divTrunc(bordaWidth, 4) * 3);
         const simY: c_int = (bordaY + bordaHeight) - 50;
@@ -199,6 +199,8 @@ pub const BluetoothScene = struct {
         deviceName.render();
         defer deviceName.deinit();
 
+        // QUER CONECTAR?
+
         const querConectarText = sdl.TTF_RenderText_Blended(self.fonteBluetooth, "Deseja se conectar a esse dispositivo?", color) orelse return;
         defer sdl.SDL_FreeSurface(querConectarText);
 
@@ -298,18 +300,6 @@ pub const BluetoothScene = struct {
                     const isNao: bool = (mouseX >= naoX and mouseX <= (naoX + naoWidth)) and (mouseY >= naoY and mouseY <= (naoY + naoHeight));
 
                     if (isSim) {
-                        if (self.selectedDevice.?.paired == false) {
-                            self.btManager.pairDevice(self.selectedDevice.?) catch |err| {
-                                std.debug.print("Erro ao parear no dispositivo: {}", .{err});
-                                return;
-                            };
-
-                            self.btManager.trustDevice(self.selectedDevice.?, false) catch |err| {
-                                std.debug.print("Erro ao confiar no dispositivo: {}", .{err});
-                                return;
-                            };
-                        }
-
                         self.btManager.connectDeviceAsync(self.selectedDevice.?) catch |err| {
                             std.debug.print("Erro ao conectar dispositivo: {}", .{err});
                             return;

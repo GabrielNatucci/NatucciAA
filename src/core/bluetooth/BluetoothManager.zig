@@ -153,11 +153,23 @@ pub const BluetoothManager = struct {
     }
 
     fn connectDevice(self: *BluetoothManager, device: *const Device) !void {
-        const device_path = try self.buildDevicePath(device.address.items);
-        defer self.allocator.free(device_path);
-
         self.connected.store(false, .seq_cst);
         self.connecting.store(true, .seq_cst);
+
+        if (device.paired == false) {
+            self.pairDevice(device) catch |err| {
+                std.debug.print("Erro ao parear no dispositivo: {}", .{err});
+                return err;
+            };
+
+            self.trustDevice(device, false) catch |err| {
+                std.debug.print("Erro ao confiar no dispositivo: {}", .{err});
+                return err;
+            };
+        }
+
+        const device_path = try self.buildDevicePath(device.address.items);
+        defer self.allocator.free(device_path);
 
         std.debug.print("Conectando ao dispositivo: {s}\n", .{device.name.items});
         std.debug.print("Path: {s}\n", .{device_path});
