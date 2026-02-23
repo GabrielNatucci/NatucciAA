@@ -5,6 +5,7 @@ const sdl = @import("../../sdlImport/Sdl.zig").sdl;
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
 const timeUtil = @import("../../util/TimeUtil.zig");
 const Device = @import("../bluetooth/Device.zig").Device;
+const Loading = @import("./components/Loading.zig").Loading;
 const SceneManager = @import("../SceneManager.zig").SceneManager;
 const Scene = @import("Scene.zig");
 const Text = @import("./components/Text.zig").Text;
@@ -44,6 +45,12 @@ const BOTAO_MODAL_MARGEM_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.07);
 const PADDING_MODAL_TITULO_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.035); // Aprox. 25 para 720p
 const modalRect: sdl.SDL_Rect = .{ .x = MARGEM_MODAL_X, .y = MARGEM_MODAL_Y, .w = LARGURA_MODAL, .h = ALTURA_MODAL };
 
+// Loading no Modal
+const TAMANHO_LOADING: c_int = @divTrunc(ALTURA_MODAL, 3); // Um terço da altura do modal, para um tamanho razoável
+const LOADING_MODAL_X: c_int = MARGEM_MODAL_X + @divTrunc(LARGURA_MODAL - TAMANHO_LOADING, 2); // Centraliza no eixo X
+const LOADING_MODAL_Y: c_int = MARGEM_MODAL_Y + @divTrunc(ALTURA_MODAL - TAMANHO_LOADING, 2); // Centraliza no eixo Y
+const LOADING_MODAL_POS: sdl.SDL_Rect = .{ .x = LOADING_MODAL_X, .y = LOADING_MODAL_Y, .w = TAMANHO_LOADING, .h = TAMANHO_LOADING };
+
 pub const BluetoothScene = struct {
     fonteBluetooth: ?*sdl.TTF_Font,
     goBackTexture: *sdl.SDL_Texture,
@@ -56,6 +63,7 @@ pub const BluetoothScene = struct {
     devicesText: ?ArrayList(Text),
     allocator: std.mem.Allocator,
     selectedDevice: ?*Device,
+    modalParingLoading: Loading,
 
     pub fn create(
         renderer: *sdl.SDL_Renderer,
@@ -88,6 +96,8 @@ pub const BluetoothScene = struct {
         const simText: Text = try Text.init("Sim", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, simX, simY);
         const naoText: Text = try Text.init("Nao", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, naoX, naoY);
 
+        const loading: Loading = try Loading.init(renderer, LOADING_MODAL_POS);
+
         return .{
             .fonteBluetooth = fonte,
             .goBackTexture = backTexture,
@@ -100,6 +110,7 @@ pub const BluetoothScene = struct {
             .pageName = pageNameTemp,
             .querConectarSim = simText,
             .querConectarNao = naoText,
+            .modalParingLoading = loading,
         };
     }
 
@@ -241,12 +252,10 @@ pub const BluetoothScene = struct {
     }
 
     fn renderDeviceConnecting(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
-        _ = self;
-
         _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, BRANCO.a);
         _ = sdl.SDL_RenderDrawRect(renderer, &modalRect);
 
-        // TODO: Adicionar um texto "Conectando..." aqui no futuro
+        self.modalParingLoading.renderLoading();
     }
 
     // isso aqui é pra renderizar as coisas que sempre vão aparecer, botão de voltar e o nome da cena
@@ -381,5 +390,6 @@ pub const BluetoothScene = struct {
         self.querConectarSim.deinit();
         self.querConectarNao.deinit();
         self.deinitDevicesTextureSurface();
+        self.modalParingLoading.deinit();
     }
 };
