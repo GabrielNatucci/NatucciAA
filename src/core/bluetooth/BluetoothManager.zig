@@ -15,6 +15,7 @@ pub const BluetoothManager = struct {
     devices: std.array_list.Managed(Device),
     connected: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
     connecting: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
+    connectionError: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
 
     pub fn init(dbus: *DBus, allocator: std.mem.Allocator) BluetoothManager {
         const devices = ArrayList(Device).init(allocator);
@@ -92,47 +93,47 @@ pub const BluetoothManager = struct {
         while (c.dbus_message_iter_get_arg_type(iface_array_iter) != c.DBUS_TYPE_INVALID) {
             var iface_dict_iter: c.DBusMessageIter = undefined;
             c.dbus_message_iter_recurse(iface_array_iter, &iface_dict_iter);
-    
+
             var iface_name: [*c]const u8 = undefined;
             c.dbus_message_iter_get_basic(&iface_dict_iter, @ptrCast(&iface_name));
             const iface_str = std.mem.span(iface_name);
-    
+
             if (std.mem.eql(u8, iface_str, "org.bluez.Device1")) {
                 _ = c.dbus_message_iter_next(&iface_dict_iter);
                 return try parseDeviceProperties(self, &iface_dict_iter);
             }
-    
+
             _ = c.dbus_message_iter_next(iface_array_iter);
         }
 
         return null;
     }
-    
+
     fn parseDevices(self: *BluetoothManager, iter: *c.DBusMessageIter) !void {
         var array_iter: c.DBusMessageIter = undefined;
         c.dbus_message_iter_recurse(iter, &array_iter);
-    
+
         self.devices = ArrayList(Device).init(self.allocator);
-    
+
         while (c.dbus_message_iter_get_arg_type(&array_iter) != c.DBUS_TYPE_INVALID) {
             var dict_iter: c.DBusMessageIter = undefined;
             c.dbus_message_iter_recurse(&array_iter, &dict_iter);
-    
+
             var path: [*c]const u8 = undefined;
             c.dbus_message_iter_get_basic(&dict_iter, @ptrCast(&path));
             const path_str = std.mem.span(path);
-    
+
             if (std.mem.indexOf(u8, path_str, "/dev_") != null) {
                 _ = c.dbus_message_iter_next(&dict_iter);
-    
+
                 var iface_array: c.DBusMessageIter = undefined;
                 c.dbus_message_iter_recurse(&dict_iter, &iface_array);
-    
+
                 if (try self.parseDeviceFromInterfaces(&iface_array)) |dev| {
                     try self.devices.append(dev);
                 }
             }
-    
+
             _ = c.dbus_message_iter_next(&array_iter);
         }
     }
@@ -154,8 +155,8 @@ pub const BluetoothManager = struct {
     }
 
     fn connectDevice(self: *BluetoothManager, device: *const Device) !void {
-        self.connected.store(false, .seq_cst);
-        self.connecting.store(true, .seq_cst);
+        self.setConnectionStatus(true, false, false);
+        errdefer self.setConnectionStatus(false, false, true);
 
         if (device.paired == false) {
             self.pairDevice(device) catch |err| {
@@ -175,23 +176,25 @@ pub const BluetoothManager = struct {
         std.debug.print("Conectando ao dispositivo: {s}\n", .{device.name.items});
         std.debug.print("Path: {s}\n", .{device_path});
 
-        // Adicione um try-catch aqui para capturar o erro detalhado
         self.dbus.callMethod(
             "org.bluez",
             device_path.ptr,
             "org.bluez.Device1",
             "Connect",
         ) catch |err| {
-            self.connected.store(false, .seq_cst);
-            self.connecting.store(false, .seq_cst);
             std.debug.print("❌ ERRO D-BUS: {}\n", .{err});
             return err;
         };
 
-        self.connected.store(true, .seq_cst);
-        self.connecting.store(false, .seq_cst);
+        self.setConnectionStatus(false, true, false);
 
         std.debug.print("Conectado com sucesso!\n", .{});
+    }
+
+    fn setConnectionStatus(self: *BluetoothManager, connecting: bool, connected: bool, connectionError: bool) void {
+        self.connecting.store(connecting, .seq_cst);
+        self.connected.store(connected, .seq_cst);
+        self.connectionError.store(connectionError, .seq_cst);
     }
 
     pub fn disconnectDevice(self: *BluetoothManager, device: *const Device) !void {
