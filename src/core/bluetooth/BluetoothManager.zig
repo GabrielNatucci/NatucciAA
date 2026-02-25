@@ -191,7 +191,7 @@ pub const BluetoothManager = struct {
         std.debug.print("Conectado com sucesso!\n", .{});
     }
 
-    fn setConnectionStatus(self: *BluetoothManager, connecting: bool, connected: bool, connectionError: bool) void {
+    pub fn setConnectionStatus(self: *BluetoothManager, connecting: bool, connected: bool, connectionError: bool) void {
         self.connecting.store(connecting, .seq_cst);
         self.connected.store(connected, .seq_cst);
         self.connectionError.store(connectionError, .seq_cst);
