@@ -88,53 +88,54 @@ pub const BluetoothManager = struct {
         try self.parseDevices(&iter);
     }
 
+    fn parseDeviceFromInterfaces(self: *BluetoothManager, iface_array_iter: *c.DBusMessageIter) !?Device {
+        while (c.dbus_message_iter_get_arg_type(iface_array_iter) != c.DBUS_TYPE_INVALID) {
+            var iface_dict_iter: c.DBusMessageIter = undefined;
+            c.dbus_message_iter_recurse(iface_array_iter, &iface_dict_iter);
+    
+            var iface_name: [*c]const u8 = undefined;
+            c.dbus_message_iter_get_basic(&iface_dict_iter, @ptrCast(&iface_name));
+            const iface_str = std.mem.span(iface_name);
+    
+            if (std.mem.eql(u8, iface_str, "org.bluez.Device1")) {
+                _ = c.dbus_message_iter_next(&iface_dict_iter);
+                return try parseDeviceProperties(self, &iface_dict_iter);
+            }
+    
+            _ = c.dbus_message_iter_next(iface_array_iter);
+        }
+
+        return null;
+    }
+    
     fn parseDevices(self: *BluetoothManager, iter: *c.DBusMessageIter) !void {
         var array_iter: c.DBusMessageIter = undefined;
         c.dbus_message_iter_recurse(iter, &array_iter);
-
+    
         self.devices = ArrayList(Device).init(self.allocator);
-
+    
         while (c.dbus_message_iter_get_arg_type(&array_iter) != c.DBUS_TYPE_INVALID) {
             var dict_iter: c.DBusMessageIter = undefined;
             c.dbus_message_iter_recurse(&array_iter, &dict_iter);
-
+    
             var path: [*c]const u8 = undefined;
             c.dbus_message_iter_get_basic(&dict_iter, @ptrCast(&path));
-
             const path_str = std.mem.span(path);
+    
             if (std.mem.indexOf(u8, path_str, "/dev_") != null) {
                 _ = c.dbus_message_iter_next(&dict_iter);
-
+    
                 var iface_array: c.DBusMessageIter = undefined;
                 c.dbus_message_iter_recurse(&dict_iter, &iface_array);
-
-                while (c.dbus_message_iter_get_arg_type(&iface_array) != c.DBUS_TYPE_INVALID) {
-                    var iface_dict: c.DBusMessageIter = undefined;
-                    c.dbus_message_iter_recurse(&iface_array, &iface_dict);
-
-                    var iface_name: [*c]const u8 = undefined;
-                    c.dbus_message_iter_get_basic(&iface_dict, @ptrCast(&iface_name));
-
-                    const iface_str = std.mem.span(iface_name);
-                    if (std.mem.eql(u8, iface_str, "org.bluez.Device1")) {
-                        _ = c.dbus_message_iter_next(&iface_dict);
-
-                        const dev = try parseDeviceProperties(self, &iface_dict);
-                        // No BluetoothManager
-
-                        if (dev != null) {
-                            try self.devices.append(dev.?);
-                        }
-                    }
-
-                    _ = c.dbus_message_iter_next(&iface_array);
+    
+                if (try self.parseDeviceFromInterfaces(&iface_array)) |dev| {
+                    try self.devices.append(dev);
                 }
             }
-
+    
             _ = c.dbus_message_iter_next(&array_iter);
         }
     }
-
     pub fn deinit(self: BluetoothManager) void {
         self.deinitDevices();
     }
