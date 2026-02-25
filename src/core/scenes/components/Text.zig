@@ -58,7 +58,22 @@ pub const Text = struct {
 
     pub fn deinit(self: Text) void {
         self.text.deinit();
-        sdl.SDL_DestroyTexture(self.texture);
+    }
+
+    pub fn hasBeenClicked(self: Text, mouseX: sdl.Sint32, mouseY: sdl.Sint32) bool {
+        const rect = sdl.SDL_Rect{
+            .x = self.x,
+            .y = self.y,
+            .w = self.width,
+            .h = self.height,
+        };
+
+        return isClickInsideRect(mouseX, mouseY, rect);
+    }
+
+    fn isClickInsideRect(mouseX: c_int, mouseY: c_int, rect: sdl.SDL_Rect) bool {
+        return mouseX >= rect.x and mouseX <= rect.x + rect.w and
+            mouseY >= rect.y and mouseY <= rect.y + rect.h;
     }
 
     pub fn render(self: Text) void {

@@ -37,18 +37,18 @@ const PADDING_VERTICAL_CAIXA_DISPOSITIVO: c_int = @intFromFloat(@as(f32, ALTURA_
 const PADDING_ICONE_CONECTADO: c_int = @intFromFloat(@as(f32, LARGURA_TELA) * 0.008); // Aprox. 10 para 1280p
 
 // Modal de pareamento
-const MARGEM_MODAL_X: c_int = @divTrunc(LARGURA_TELA, 6); // Margem de 1/6 da largura da tela
-const MARGEM_MODAL_Y: c_int = @divTrunc(ALTURA_TELA, 5); // Margem de 1/5 da altura da tela
-const LARGURA_MODAL: c_int = LARGURA_TELA - (MARGEM_MODAL_X * 2);
-const ALTURA_MODAL: c_int = ALTURA_TELA - (MARGEM_MODAL_Y * 2);
+const BORDA_MODAL_X: c_int = @divTrunc(LARGURA_TELA, 6); // Margem de 1/6 da largura da tela
+const BORDA_MODAL_Y: c_int = @divTrunc(ALTURA_TELA, 5); // Margem de 1/5 da altura da tela
+const LARGURA_MODAL: c_int = LARGURA_TELA - (BORDA_MODAL_X * 2);
+const ALTURA_MODAL: c_int = ALTURA_TELA - (BORDA_MODAL_Y * 2);
 const BOTAO_MODAL_MARGEM_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.07); // Aprox. 50 para 720p
 const PADDING_MODAL_TITULO_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.035); // Aprox. 25 para 720p
-const modalRect: sdl.SDL_Rect = .{ .x = MARGEM_MODAL_X, .y = MARGEM_MODAL_Y, .w = LARGURA_MODAL, .h = ALTURA_MODAL };
+const modalRect: sdl.SDL_Rect = .{ .x = BORDA_MODAL_X, .y = BORDA_MODAL_Y, .w = LARGURA_MODAL, .h = ALTURA_MODAL };
 
 // Loading no Modal
 const TAMANHO_LOADING: c_int = @divTrunc(ALTURA_MODAL, 3); // Um terço da altura do modal, para um tamanho razoável
-const LOADING_MODAL_X: c_int = MARGEM_MODAL_X + @divTrunc(LARGURA_MODAL - TAMANHO_LOADING, 2); // Centraliza no eixo X
-const LOADING_MODAL_Y: c_int = MARGEM_MODAL_Y + @divTrunc(ALTURA_MODAL - TAMANHO_LOADING, 2); // Centraliza no eixo Y
+const LOADING_MODAL_X: c_int = BORDA_MODAL_X + @divTrunc(LARGURA_MODAL - TAMANHO_LOADING, 2); // Centraliza no eixo X
+const LOADING_MODAL_Y: c_int = BORDA_MODAL_Y + @divTrunc(ALTURA_MODAL - TAMANHO_LOADING, 2); // Centraliza no eixo Y
 const LOADING_MODAL_POS: sdl.SDL_Rect = .{ .x = LOADING_MODAL_X, .y = LOADING_MODAL_Y, .w = TAMANHO_LOADING, .h = TAMANHO_LOADING };
 
 pub const BluetoothScene = struct {
@@ -57,6 +57,7 @@ pub const BluetoothScene = struct {
     pageName: Text,
     querConectarSim: Text,
     querConectarNao: Text,
+    querConectarText: Text,
     connectedTexture: *sdl.SDL_Texture,
     btManager: *bt.BluetoothManager,
     lastTimeSeconds: f32,
@@ -65,11 +66,7 @@ pub const BluetoothScene = struct {
     selectedDevice: ?*Device,
     modalParingLoading: Loading,
 
-    pub fn create(
-        renderer: *sdl.SDL_Renderer,
-        bluetooth: *bt.BluetoothManager,
-        allocator: std.mem.Allocator,
-    ) !BluetoothScene {
+    pub fn create(renderer: *sdl.SDL_Renderer, bluetooth: *bt.BluetoothManager, allocator: std.mem.Allocator) !BluetoothScene {
         std.debug.print("\nInicializando bluetoothScene...\n", .{});
 
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 32);
@@ -88,13 +85,17 @@ pub const BluetoothScene = struct {
         const textX = @divTrunc(LARGURA_TELA, 2);
         const pageNameTemp: Text = try Text.init("Bluetooth", renderer, allocator, TAMANHO_FONTE_TITULO, BRANCO, textX, POSICAO_TITULO_Y);
 
-        const simX: c_int = MARGEM_MODAL_X + (@divTrunc(LARGURA_MODAL, 4) * 3);
-        const simY: c_int = (MARGEM_MODAL_Y + ALTURA_MODAL) - BOTAO_MODAL_MARGEM_Y;
-        const naoX: c_int = MARGEM_MODAL_X + @divTrunc(LARGURA_MODAL, 4);
-        const naoY: c_int = (MARGEM_MODAL_Y + ALTURA_MODAL) - BOTAO_MODAL_MARGEM_Y;
+        const simX: c_int = BORDA_MODAL_X + (@divTrunc(LARGURA_MODAL, 4) * 3);
+        const simY: c_int = (BORDA_MODAL_Y + ALTURA_MODAL) - BOTAO_MODAL_MARGEM_Y;
+        const naoX: c_int = BORDA_MODAL_X + @divTrunc(LARGURA_MODAL, 4);
+        const naoY: c_int = (BORDA_MODAL_Y + ALTURA_MODAL) - BOTAO_MODAL_MARGEM_Y;
 
         const simText: Text = try Text.init("Sim", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, simX, simY);
         const naoText: Text = try Text.init("Nao", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, naoX, naoY);
+
+        const querConectarX: c_int = BORDA_MODAL_X + @divTrunc(LARGURA_MODAL, 2);
+        const querConectarY: c_int = BORDA_MODAL_Y + @divTrunc(ALTURA_MODAL, 2);
+        const querConectarText: Text = try Text.init("Deseja se conectar a esse dispositivo?", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, querConectarX, querConectarY);
 
         const loading: Loading = try Loading.init(renderer, LOADING_MODAL_POS);
 
@@ -111,6 +112,7 @@ pub const BluetoothScene = struct {
             .querConectarSim = simText,
             .querConectarNao = naoText,
             .modalParingLoading = loading,
+            .querConectarText = querConectarText
         };
     }
 
@@ -212,8 +214,8 @@ pub const BluetoothScene = struct {
         _ = sdl.SDL_RenderDrawRect(renderer, &modalRect);
 
         // NOME DISPOSITIVO
-        const deviceX: c_int = MARGEM_MODAL_X + @divTrunc(LARGURA_MODAL, 2);
-        const deviceY: c_int = MARGEM_MODAL_Y + PADDING_MODAL_TITULO_Y;
+        const deviceX: c_int = BORDA_MODAL_X + @divTrunc(LARGURA_MODAL, 2);
+        const deviceY: c_int = BORDA_MODAL_Y + PADDING_MODAL_TITULO_Y;
 
         const deviceName: Text = Text.init(self.selectedDevice.?.name.items.ptr, renderer, self.allocator, TAMANHO_FONTE_TEXTO, BRANCO, deviceX, deviceY) catch |err| {
             std.debug.print("Erro ao criar texto de device: {}", .{err});
@@ -223,32 +225,10 @@ pub const BluetoothScene = struct {
         deviceName.render();
         defer deviceName.deinit();
 
-        // QUER CONECTAR?
-        const querConectarTextStr = "Deseja se conectar a esse dispositivo?";
-        const querConectarSurface = sdl.TTF_RenderText_Blended(self.fonteBluetooth, querConectarTextStr, BRANCO) orelse return;
-        defer sdl.SDL_FreeSurface(querConectarSurface);
-
-        const querConectarTexture = sdl.SDL_CreateTextureFromSurface(renderer, querConectarSurface) orelse return;
-        defer sdl.SDL_DestroyTexture(querConectarTexture);
-
-        const querConectarWidth: c_int = querConectarSurface.*.w;
-        const querConectarHeight: c_int = querConectarSurface.*.h;
-
-        const querConectarX: c_int = MARGEM_MODAL_X + @divTrunc(LARGURA_MODAL - querConectarWidth, 2);
-        const querConectarY: c_int = MARGEM_MODAL_Y + @divTrunc(ALTURA_MODAL - querConectarHeight, 2);
-
-        var querConectarDest: sdl.SDL_Rect = .{
-            .x = querConectarX,
-            .y = querConectarY,
-            .w = querConectarWidth,
-            .h = querConectarHeight,
-        };
-
-        _ = sdl.SDL_RenderCopy(renderer, querConectarTexture, null, &querConectarDest);
-
         // QUER CONECTAR, SIM - NAO?
         self.querConectarSim.render();
         self.querConectarNao.render();
+        self.querConectarText.render();
     }
 
     fn renderDeviceConnecting(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
@@ -268,7 +248,7 @@ pub const BluetoothScene = struct {
     fn isClickInsideRect(self: *const BluetoothScene, mouseX: c_int, mouseY: c_int, rect: sdl.SDL_Rect) bool {
         _ = self;
         return mouseX >= rect.x and mouseX <= rect.x + rect.w and
-               mouseY >= rect.y and mouseY <= rect.y + rect.h;
+            mouseY >= rect.y and mouseY <= rect.y + rect.h;
     }
 
     pub fn handleEvent(self: *BluetoothScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
@@ -310,27 +290,12 @@ pub const BluetoothScene = struct {
                         }
                     }
                 } else {
-                    const simRect = sdl.SDL_Rect{
-                        .x = self.querConectarSim.x,
-                        .y = self.querConectarSim.y,
-                        .w = self.querConectarSim.width,
-                        .h = self.querConectarSim.height,
-                    };
-                    const naoRect = sdl.SDL_Rect{
-                        .x = self.querConectarNao.x,
-                        .y = self.querConectarNao.y,
-                        .w = self.querConectarNao.width,
-                        .h = self.querConectarNao.height,
-                    };
-
-                    if (self.isClickInsideRect(mouseX, mouseY, simRect)) {
+                    if (self.querConectarSim.hasBeenClicked(mouseX, mouseY)) {
                         self.btManager.connectDeviceAsync(self.selectedDevice.?) catch |err| {
                             std.debug.print("Erro ao conectar dispositivo: {}", .{err});
                             return;
                         };
-
-                        // self.selectedDevice = null;
-                    } else if (self.isClickInsideRect(mouseX, mouseY, naoRect)) {
+                    } else if (self.querConectarNao.hasBeenClicked(mouseX, mouseY)) {
                         self.selectedDevice = null;
                     }
                 }
@@ -389,7 +354,8 @@ pub const BluetoothScene = struct {
         self.pageName.deinit();
         self.querConectarSim.deinit();
         self.querConectarNao.deinit();
-        self.deinitDevicesTextureSurface();
+        self.querConectarText.deinit();
         self.modalParingLoading.deinit();
+        self.deinitDevicesTextureSurface();
     }
 };
