@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const bt = @import("../../core/bluetooth/BluetoothManager.zig");
 const LARGURA_TELA = @import("../../main.zig").WIDTH;
 const ALTURA_TELA = @import("../../main.zig").HEIGHT;
 const sdl = @import("../../sdlImport/Sdl.zig").sdl;
@@ -16,16 +17,18 @@ const POSICAO_TITULO_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.04); // 
 const POSICAO_TITULO_X: c_int = @divTrunc(LARGURA_TELA, 2); // Aprox. 30 para 720p
 
 pub const MusicScene = struct {
+    btManager: *bt.BluetoothManager,
     goBackTexture: *sdl.SDL_Texture,
     pageName: Text,
 
-    pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator) !MusicScene {
-        std.debug.print("\nInicializando configScene...\n", .{});
+    pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator, bluetooth: *bt.BluetoothManager) !MusicScene {
+        std.debug.print("\nInicializando musicScene...\n", .{});
 
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
 
         return .{
             .goBackTexture = backTexture,
+            .btManager = bluetooth,
             .pageName = try Text.init(
                 "Music",
                 renderer,
@@ -40,11 +43,11 @@ pub const MusicScene = struct {
 
     pub fn init(self: *MusicScene) !void {
         _ = self;
-        std.debug.print("Finalizando configScene... (init)\n", .{});
+        std.debug.print("Finalizando musicScene... (init)\n", .{});
     }
 
     pub fn deinit(self: *MusicScene) void {
-        std.debug.print("Desligando configScene\n", .{});
+        std.debug.print("Desligando musicScene\n", .{});
 
         sdl.SDL_DestroyTexture(self.goBackTexture);
         self.pageName.deinit();
@@ -52,9 +55,9 @@ pub const MusicScene = struct {
 
     pub fn update(self: *MusicScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
         _ = delta_time;
-        _ = self;
         _ = renderer;
         _ = active;
+        _ = self;
     }
 
     pub fn render(self: *MusicScene, renderer: *sdl.SDL_Renderer) void {
@@ -64,12 +67,15 @@ pub const MusicScene = struct {
     }
 
     pub fn handleEvent(self: *MusicScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
-        _ = self;
-
         switch (event.type) {
             sdl.SDL_MOUSEBUTTONUP => {
                 const mouseX = event.button.x;
                 const mouseY = event.button.y;
+
+                self.btManager.pauseMusic() catch |err| {
+                    std.debug.print("Erro ao pausar música: {}\n", .{err});
+                    return;
+                };
 
                 if (SceneUtil.isBackButton(mouseY, mouseX)) {
                     sManager.setScene(sManager.homeScene) catch |err| {

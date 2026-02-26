@@ -3,6 +3,8 @@ const c = @import("../../sdlImport/Sdl.zig").dbus;
 const std = @import("std");
 const Device = @import("./Device.zig").Device;
 const ArrayList = std.array_list.Managed;
+const MAC_LEN = 17;
+const MacAddress = [MAC_LEN]u8;
 
 // ============================================================================
 // BluetoothManager - Gerenciador específico de Bluetooth
@@ -16,6 +18,8 @@ pub const BluetoothManager = struct {
     connected: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
     connecting: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
     connectionError: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
+    mu: std.Thread.Mutex = .{},
+    connectedAddress: ?[MAC_LEN]u8 = null,
 
     pub fn init(dbus: *DBus, allocator: std.mem.Allocator) BluetoothManager {
         const devices = ArrayList(Device).init(allocator);
@@ -189,12 +193,27 @@ pub const BluetoothManager = struct {
         self.setConnectionStatus(false, true, false);
 
         std.debug.print("Conectado com sucesso!\n", .{});
+
+        self.mu.lock();
+        defer self.mu.unlock();
+        const address = device.address.items;
+        self.connectedAddress = blk: {
+            var addr: [MAC_LEN]u8 = undefined;
+            @memcpy(&addr, address[0..MAC_LEN]);
+            break :blk addr;
+        };
     }
 
     pub fn setConnectionStatus(self: *BluetoothManager, connecting: bool, connected: bool, connectionError: bool) void {
         self.connecting.store(connecting, .seq_cst);
         self.connected.store(connected, .seq_cst);
         self.connectionError.store(connectionError, .seq_cst);
+    }
+
+    pub fn getConnectedAddress(self: *BluetoothManager) ?[MAC_LEN]u8 {
+        self.mu.lock();
+        defer self.mu.unlock();
+        return self.connectedAddress;
     }
 
     pub fn disconnectDevice(self: *BluetoothManager, device: *const Device) !void {
@@ -212,6 +231,7 @@ pub const BluetoothManager = struct {
 
         self.connecting.store(false, .seq_cst);
         self.connected.store(false, .seq_cst);
+        self.connectedAddress = null;
         std.debug.print("Desconectado com sucesso!\n", .{});
     }
 
@@ -388,6 +408,41 @@ pub const BluetoothManager = struct {
         }
 
         std.debug.print("✅ Agente auto-accept registrado!\n", .{});
+    }
+
+    fn buildPathToMusic(
+        buffer: []u8,
+        adapter_path: []const u8,
+        connected_address: ?[]const u8, // string "D8:68:A0:77:CF:1D"
+    ) ![]const u8 {
+        const addr_str = connected_address orelse return error.NoAddress;
+
+        var mac_buf: [17]u8 = undefined;
+        @memcpy(&mac_buf, addr_str[0..17]);
+        std.mem.replaceScalar(u8, &mac_buf, ':', '_');
+
+        return try std.fmt.bufPrint(buffer, "{s}/dev_{s}", .{ adapter_path, mac_buf });
+    }
+
+    pub fn pauseMusic(self: *BluetoothManager) !void {
+        std.debug.print("Pausando música...\n", .{});
+
+        var buf: [128]u8 = undefined;
+        const path = try buildPathToMusic(
+            &buf,
+            std.mem.sliceTo(self.adapter_path, 0),
+            if (self.connectedAddress) |addr| addr[0..] else null,
+        );
+        buf[path.len] = 0;
+
+        std.debug.print("path: '{s}'\n", .{path});
+
+        try self.dbus.callMethod(
+            "org.bluez",
+            path.ptr,
+            "org.bluez.MediaControl1", // interface correta para mídia
+            "Pause", // método correto
+        );
     }
 };
 

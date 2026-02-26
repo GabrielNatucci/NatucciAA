@@ -59,7 +59,7 @@ pub const SceneManager = struct {
         btScene.* = Scene.init("BT", btTemplate);
 
         const musicTemplate = try allocator.create(MusicScene);
-        musicTemplate.* = try MusicScene.create(renderer, allocator);
+        musicTemplate.* = try MusicScene.create(renderer, allocator, btManager);
         var musicScene = try allocator.create(Scene);
         musicScene.* = Scene.init("BT", musicTemplate);
 

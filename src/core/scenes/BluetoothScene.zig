@@ -128,6 +128,7 @@ pub const BluetoothScene = struct {
         if (self.btManager.connected.load(.seq_cst) == true) {
             self.selectedDevice = null;
         }
+
     }
 
     fn listarDispositivos(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
