@@ -14,12 +14,12 @@ const std = @import("std");
 // Constantes de UI - Proporcionais à tela
 const LARGURA_TELA = @import("../../main.zig").WIDTH;
 const ALTURA_TELA = @import("../../main.zig").HEIGHT;
-const BRANCO: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+const COR_BRANCA: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
 // Fontes
 const TAMANHO_FONTE_TITULO: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.045); // Aprox. 32 para 720p
-const TAMANHO_FONTE_TEXTO: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.045);
 const POSICAO_TITULO_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.04); // Aprox. 30 para 720p
+const TAMANHO_FONTE_TEXTO: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.045);
 
 // Botão de voltar (canto superior esquerdo)
 const BOTAO_VOLTAR_LARGURA: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.1); // Aprox. 70 para 720p
@@ -83,25 +83,16 @@ pub const BluetoothScene = struct {
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
         const bluetoothConnecetTexture = try textureUtil.loadSDLTexture(renderer, "res/images/btIcon.png");
 
-        const textX = @divTrunc(LARGURA_TELA, 2);
-        const pageNameTemp: Text = try Text.init("Bluetooth", renderer, allocator, TAMANHO_FONTE_TITULO, BRANCO, textX, POSICAO_TITULO_Y);
-
         const simX: c_int = BORDA_MODAL_X + (@divTrunc(LARGURA_MODAL, 4) * 3);
         const simY: c_int = (BORDA_MODAL_Y + ALTURA_MODAL) - MODAL_MARGEM_Y;
         const naoX: c_int = BORDA_MODAL_X + @divTrunc(LARGURA_MODAL, 4);
         const naoY: c_int = (BORDA_MODAL_Y + ALTURA_MODAL) - MODAL_MARGEM_Y;
 
-        const simText: Text = try Text.init("Sim", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, simX, simY);
-        const naoText: Text = try Text.init("Nao", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, naoX, naoY);
-
         const querConectarX: c_int = BORDA_MODAL_X + @divTrunc(LARGURA_MODAL, 2);
         const querConectarY: c_int = BORDA_MODAL_Y + @divTrunc(ALTURA_MODAL, 2);
-        const querConectarText: Text = try Text.init("Deseja se conectar a esse dispositivo?", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, querConectarX, querConectarY);
-        const erroAoContectarY: c_int = BORDA_MODAL_Y  + MODAL_MARGEM_Y;
-        const erroAoContectarText: Text = try Text.init("Erro ao conectar ao seu dispositivo.", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, querConectarX, erroAoContectarY);
+        const erroAoContectarY: c_int = BORDA_MODAL_Y + MODAL_MARGEM_Y;
 
         const okY: c_int = (BORDA_MODAL_Y + ALTURA_MODAL) - MODAL_MARGEM_Y;
-        const erroAoContectarOkText: Text = try Text.init("OK", renderer, allocator, TAMANHO_FONTE_TEXTO, BRANCO, querConectarX, okY);
 
         const loading: Loading = try Loading.init(renderer, LOADING_MODAL_POS);
 
@@ -114,13 +105,13 @@ pub const BluetoothScene = struct {
             .devicesText = null,
             .allocator = allocator,
             .selectedDevice = null,
-            .pageName = pageNameTemp,
-            .querConectarSim = simText,
-            .querConectarNao = naoText,
             .modalParingLoading = loading,
-            .querConectarText = querConectarText,
-            .erroAoContectar = erroAoContectarText,
-            .erroAoContectarOk = erroAoContectarOkText,
+            .pageName = try Text.init("Bluetooth", renderer, allocator, TAMANHO_FONTE_TITULO, COR_BRANCA, @divTrunc(LARGURA_TELA, 2), POSICAO_TITULO_Y),
+            .querConectarSim = try Text.init("Sim", renderer, allocator, TAMANHO_FONTE_TEXTO, COR_BRANCA, simX, simY),
+            .querConectarNao = try Text.init("Nao", renderer, allocator, TAMANHO_FONTE_TEXTO, COR_BRANCA, naoX, naoY),
+            .querConectarText = try Text.init("Deseja se conectar a esse dispositivo?", renderer, allocator, TAMANHO_FONTE_TEXTO, COR_BRANCA, querConectarX, querConectarY),
+            .erroAoContectar = try Text.init("Erro ao conectar ao seu dispositivo.", renderer, allocator, TAMANHO_FONTE_TEXTO, COR_BRANCA, querConectarX, erroAoContectarY),
+            .erroAoContectarOk = try Text.init("OK", renderer, allocator, TAMANHO_FONTE_TEXTO, COR_BRANCA, querConectarX, okY),
         };
     }
 
@@ -160,7 +151,7 @@ pub const BluetoothScene = struct {
                     const yPos = POSICAO_INICIAL_LISTA_Y + @as(c_int, @intCast(i)) * ESPACAMENTO_VERTICAL_DISPOSITIVO;
 
                     const textX = POSICAO_INICIAL_LISTA_X + @divTrunc(LARGURA_CAIXA_DISPOSITIVO, 2);
-                    const deviceText: Text = Text.init(value.name.items.ptr, renderer, self.allocator, TAMANHO_FONTE_TEXTO, BRANCO, textX, yPos) catch |err| {
+                    const deviceText: Text = Text.init(value.name.items.ptr, renderer, self.allocator, TAMANHO_FONTE_TEXTO, COR_BRANCA, textX, yPos) catch |err| {
                         std.debug.print("Erro ao criar texto de device: {}", .{err});
                         return;
                     };
@@ -198,7 +189,7 @@ pub const BluetoothScene = struct {
                 const alturaCaixa = deviceText.height + (PADDING_VERTICAL_CAIXA_DISPOSITIVO * 2);
                 const yCaixa = deviceText.y - PADDING_VERTICAL_CAIXA_DISPOSITIVO;
 
-                _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, BRANCO.a);
+                _ = sdl.SDL_SetRenderDrawColor(renderer, COR_BRANCA.r, COR_BRANCA.g, COR_BRANCA.b, COR_BRANCA.a);
                 var deviceDest: sdl.SDL_Rect = .{
                     .x = POSICAO_INICIAL_LISTA_X,
                     .y = yCaixa,
@@ -220,14 +211,14 @@ pub const BluetoothScene = struct {
 
     fn renderDevicePairing(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
         // BORDA
-        _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, BRANCO.a);
+        _ = sdl.SDL_SetRenderDrawColor(renderer, COR_BRANCA.r, COR_BRANCA.g, COR_BRANCA.b, COR_BRANCA.a);
         _ = sdl.SDL_RenderDrawRect(renderer, &modalRect);
 
         // NOME DISPOSITIVO
         const deviceX: c_int = BORDA_MODAL_X + @divTrunc(LARGURA_MODAL, 2);
         const deviceY: c_int = BORDA_MODAL_Y + MODAL_MARGEM_Y;
 
-        const deviceName: Text = Text.init(self.selectedDevice.?.name.items.ptr, renderer, self.allocator, TAMANHO_FONTE_TEXTO, BRANCO, deviceX, deviceY) catch |err| {
+        const deviceName: Text = Text.init(self.selectedDevice.?.name.items.ptr, renderer, self.allocator, TAMANHO_FONTE_TEXTO, COR_BRANCA, deviceX, deviceY) catch |err| {
             std.debug.print("Erro ao criar texto de device: {}", .{err});
             return;
         };
@@ -242,14 +233,14 @@ pub const BluetoothScene = struct {
     }
 
     fn renderDeviceConnecting(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
-        _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, BRANCO.a);
+        _ = sdl.SDL_SetRenderDrawColor(renderer, COR_BRANCA.r, COR_BRANCA.g, COR_BRANCA.b, COR_BRANCA.a);
         _ = sdl.SDL_RenderDrawRect(renderer, &modalRect);
 
         self.modalParingLoading.renderLoading();
     }
 
     fn renderConnectionError(self: *BluetoothScene, renderer: *sdl.SDL_Renderer) void {
-        _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, BRANCO.a);
+        _ = sdl.SDL_SetRenderDrawColor(renderer, COR_BRANCA.r, COR_BRANCA.g, COR_BRANCA.b, COR_BRANCA.a);
         _ = sdl.SDL_RenderDrawRect(renderer, &modalRect);
 
         self.erroAoContectar.render();

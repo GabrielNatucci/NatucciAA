@@ -5,7 +5,6 @@ const sdl = @import("sdlImport/Sdl.zig").sdl;
 const timeUtil = @import("util/TimeUtil.zig");
 const sdlUtil = @import("util/SdlInternalUtils.zig");
 const HomeScene = @import("core/scenes/HomeScene.zig").HomeScene;
-const ConfigScene = @import("core/scenes/ConfigScene.zig").ConfigScene;
 const SceneManager = @import("core/SceneManager.zig").SceneManager;
 const BluetoothScene = @import("core/scenes/BluetoothScene.zig").BluetoothScene;
 

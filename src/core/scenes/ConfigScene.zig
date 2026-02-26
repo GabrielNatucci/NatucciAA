@@ -1,49 +1,53 @@
 const std = @import("std");
+
+const LARGURA_TELA = @import("../../main.zig").WIDTH;
+const ALTURA_TELA = @import("../../main.zig").HEIGHT;
 const sdl = @import("../../sdlImport/Sdl.zig").sdl;
-const Scene = @import("Scene.zig");
-const SceneManager = @import("../SceneManager.zig").SceneManager;
-const timeUtil = @import("../../util/TimeUtil.zig");
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
+const timeUtil = @import("../../util/TimeUtil.zig");
+const SceneManager = @import("../SceneManager.zig").SceneManager;
+const Text = @import("./components/Text.zig").Text;
 const SceneUtil = @import("./sceneUtil/SceneUtil.zig");
+const Scene = @import("Scene.zig");
+
+const BRANCO: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+const TAMANHO_FONTE_TITULO: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.045); // Aprox. 32 para 720p
+const POSICAO_TITULO_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.04); // Aprox. 30 para 720p
+const POSICAO_TITULO_X: c_int = @divTrunc(LARGURA_TELA, 2); // Aprox. 30 para 720p
 
 pub const ConfigScene = struct {
-    fonteConfig: ?*sdl.TTF_Font,
     goBackTexture: *sdl.SDL_Texture,
+    pageName: Text,
 
-    pub fn create(renderer: *sdl.SDL_Renderer) !ConfigScene {
+    pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator) !ConfigScene {
         std.debug.print("\nInicializando configScene...\n", .{});
-
-        const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", 32);
-
-        if (fonte == null) {
-            std.debug.print("Erro ao carregar a fenix font -> {s}\n", .{sdl.TTF_GetError()});
-            return error.FonteNaoCarregada;
-        } else {
-            std.debug.print("Fonte da config carregada\n", .{});
-            sdl.TTF_SetFontStyle(fonte, sdl.TTF_STYLE_NORMAL);
-        }
 
         const backTexture = try textureUtil.loadSDLTexture(renderer, "res/images/backButton.png");
 
         return .{
-            .fonteConfig = fonte,
             .goBackTexture = backTexture,
+            .pageName = try Text.init(
+                "Configuracao",
+                renderer,
+                allocator,
+                TAMANHO_FONTE_TITULO,
+                BRANCO,
+                POSICAO_TITULO_X,
+                POSICAO_TITULO_Y,
+            ),
         };
     }
 
     pub fn init(self: *ConfigScene) !void {
         _ = self;
-        std.debug.print("Inicializando configScene... (init)\n", .{});
+        std.debug.print("Finalizando configScene... (init)\n", .{});
     }
 
     pub fn deinit(self: *ConfigScene) void {
         std.debug.print("Desligando configScene\n", .{});
 
-        if (self.fonteConfig != null) {
-            sdl.TTF_CloseFont(self.fonteConfig);
-        }
-
         sdl.SDL_DestroyTexture(self.goBackTexture);
+        self.pageName.deinit();
     }
 
     pub fn update(self: *ConfigScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
@@ -54,22 +58,7 @@ pub const ConfigScene = struct {
     }
 
     pub fn render(self: *ConfigScene, renderer: *sdl.SDL_Renderer) void {
-        const color: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
-
-        const textSurface = sdl.TTF_RenderText_Blended(self.fonteConfig, "Config", color);
-        if (textSurface == null) return;
-        defer sdl.SDL_FreeSurface(textSurface);
-
-        const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
-        if (textTexture == null) return;
-        defer sdl.SDL_DestroyTexture(textTexture);
-
-        const width: c_int = textSurface.*.w;
-        const height: c_int = textSurface.*.h;
-
-        var configDest: sdl.SDL_Rect = .{ .x = 565, .y = 10, .w = width, .h = height };
-
-        _ = sdl.SDL_RenderCopy(renderer, textTexture, null, &configDest);
+        self.pageName.render();
 
         _ = sdl.SDL_RenderCopy(renderer, self.goBackTexture, null, &SceneUtil.backButtonDest);
     }

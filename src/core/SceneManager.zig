@@ -46,7 +46,7 @@ pub const SceneManager = struct {
         homeScene.* = Scene.init("Home", homeTemplate);
 
         const configTemplate = try allocator.create(ConfigScene);
-        configTemplate.* = try ConfigScene.create(renderer);
+        configTemplate.* = try ConfigScene.create(renderer, allocator);
         var configScene = try allocator.create(Scene);
         configScene.* = Scene.init("Config", configTemplate);
 
