@@ -4,6 +4,7 @@ const sdl = @import("../sdlImport/Sdl.zig").sdl;
 const HomeScene = @import("./scenes/HomeScene.zig").HomeScene;
 const ConfigScene = @import("./scenes/ConfigScene.zig").ConfigScene;
 const BluetoothScene = @import("./scenes/BluetoothScene.zig").BluetoothScene;
+const MusicScene = @import("./scenes/MusicScene.zig").MusicScene;
 const bt = @import("bluetooth/BluetoothManager.zig");
 
 const WIDTH_RES = @import("../main.zig").WIDTH;
@@ -19,10 +20,12 @@ pub const SceneManager = struct {
     homeTemplate: *HomeScene,
     configTemplate: *ConfigScene,
     btTemplate: *BluetoothScene,
+    musicTemplate: *MusicScene,
 
     homeScene: *Scene,
     configScene: *Scene,
     btScene: *Scene,
+    musicScene: *Scene,
 
     pub fn init(renderer: *sdl.SDL_Renderer, btManager: *bt.BluetoothManager, allocator: std.mem.Allocator) !SceneManager {
         const backgroundSurface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/fundo.png");
@@ -55,9 +58,15 @@ pub const SceneManager = struct {
         var btScene = try allocator.create(Scene);
         btScene.* = Scene.init("BT", btTemplate);
 
+        const musicTemplate = try allocator.create(MusicScene);
+        musicTemplate.* = try MusicScene.create(renderer, allocator);
+        var musicScene = try allocator.create(Scene);
+        musicScene.* = Scene.init("BT", musicTemplate);
+
+        homeScene.active = true;
         configScene.active = false;
         btScene.active = false;
-        homeScene.active = true;
+        musicScene.active = false;
 
         return .{
             .allocator = allocator,
@@ -71,6 +80,8 @@ pub const SceneManager = struct {
             .homeScene = homeScene,
             .configScene = configScene,
             .btScene = btScene,
+            .musicScene = musicScene,
+            .musicTemplate = musicTemplate,
         };
     }
 
@@ -134,15 +145,20 @@ pub const SceneManager = struct {
 
     pub fn deinit(self: *SceneManager) void {
         self.homeTemplate.deinit();
-        self.configTemplate.deinit();
-        self.btTemplate.deinit();
-
         self.allocator.destroy(self.homeScene);
-        self.allocator.destroy(self.configScene);
-        self.allocator.destroy(self.btScene);
         self.allocator.destroy(self.homeTemplate);
+
+        self.configTemplate.deinit();
+        self.allocator.destroy(self.configScene);
         self.allocator.destroy(self.configTemplate);
+
+        self.btTemplate.deinit();
+        self.allocator.destroy(self.btScene);
         self.allocator.destroy(self.btTemplate);
+
+        self.musicScene.deinit();
+        self.allocator.destroy(self.musicScene);
+        self.allocator.destroy(self.musicTemplate);
 
         sdl.SDL_DestroyTexture(self.background);
     }

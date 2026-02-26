@@ -9,7 +9,7 @@ pub const iconsSize: c_int = 120;
 pub const buttonsHeight: c_int = 500;
 pub const aaXPos: c_int = 70;
 pub const btXPos: c_int = 310;
-pub const radXPos: c_int = 550;
+pub const musicXPos: c_int = 550;
 pub const fileXPos: c_int = 790;
 pub const cfgXPos: c_int = 1030;
 
@@ -28,8 +28,8 @@ pub const HomeScene = struct {
     filesDest: ?sdl.SDL_Rect,
     filesTexture: *sdl.SDL_Texture,
 
-    radioDest: ?sdl.SDL_Rect,
-    radioTexture: *sdl.SDL_Texture,
+    musicDest: ?sdl.SDL_Rect,
+    musicTexture: *sdl.SDL_Texture,
 
     configDest: ?sdl.SDL_Rect,
     configTexture: *sdl.SDL_Texture,
@@ -51,10 +51,10 @@ pub const HomeScene = struct {
         const btDest: ?sdl.SDL_Rect = .{ .x = btXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
         const filesDest: ?sdl.SDL_Rect = .{ .x = fileXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
         const cfgDest: ?sdl.SDL_Rect = .{ .x = cfgXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
-        const radDest: ?sdl.SDL_Rect = .{ .x = radXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
+        const musicDest: ?sdl.SDL_Rect = .{ .x = musicXPos, .y = buttonsHeight, .w = iconsSize, .h = iconsSize };
 
         const cfgTexture = try textureUtil.loadSDLTexture(renderer, "res/images/configIcon.png");
-        const radTexture = try textureUtil.loadSDLTexture(renderer, "res/images/radioIcon.png");
+        const musicTexture = try textureUtil.loadSDLTexture(renderer, "res/images/music.png");
         const flTexture = try textureUtil.loadSDLTexture(renderer, "res/images/fileIcon.png");
         const aaTexture = try textureUtil.loadSDLTexture(renderer, "res/images/aaIcon.png");
         const btTexture = try textureUtil.loadSDLTexture(renderer, "res/images/btIcon.png");
@@ -67,8 +67,8 @@ pub const HomeScene = struct {
             .bluetoothDest = btDest,
             .filesDest = filesDest,
             .configDest = cfgDest,
-            .radioDest = radDest,
-            .radioTexture = radTexture,
+            .musicDest = musicDest,
+            .musicTexture = musicTexture,
             .configTexture = cfgTexture,
             .filesTexture = flTexture,
             .androidAutoTexture = aaTexture,
@@ -117,7 +117,7 @@ pub const HomeScene = struct {
         _ = sdl.SDL_RenderCopy(renderer, self.androidAutoTexture, null, &self.androidAutoDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.bluetoothTexture, null, &self.bluetoothDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.filesTexture, null, &self.filesDest.?);
-        _ = sdl.SDL_RenderCopy(renderer, self.radioTexture, null, &self.radioDest.?);
+        _ = sdl.SDL_RenderCopy(renderer, self.musicTexture, null, &self.musicDest.?);
         _ = sdl.SDL_RenderCopy(renderer, self.configTexture, null, &self.configDest.?);
     }
 
@@ -136,6 +136,8 @@ pub const HomeScene = struct {
                     scene = sManager.configScene;
                 } else if (mouseX > btXPos and mouseX < (btXPos + iconsSize) and isButtonHeight == true) {
                     scene = sManager.btScene;
+                } else if (mouseX > musicXPos and mouseX < (musicXPos + iconsSize) and isButtonHeight == true) {
+                    scene = sManager.musicScene;
                 }
 
                 if (scene != null) {
@@ -171,7 +173,7 @@ pub const HomeScene = struct {
         }
 
         sdl.SDL_DestroyTexture(self.configTexture);
-        sdl.SDL_DestroyTexture(self.radioTexture);
+        sdl.SDL_DestroyTexture(self.musicTexture);
         sdl.SDL_DestroyTexture(self.bluetoothTexture);
         sdl.SDL_DestroyTexture(self.androidAutoTexture);
         sdl.SDL_DestroyTexture(self.filesTexture);
