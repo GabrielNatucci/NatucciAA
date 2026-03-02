@@ -58,6 +58,7 @@ pub const Text = struct {
 
     pub fn deinit(self: Text) void {
         self.text.deinit();
+        sdl.SDL_DestroyTexture(self.texture);
     }
 
     pub fn hasBeenClicked(self: Text, mouseX: sdl.Sint32, mouseY: sdl.Sint32) bool {

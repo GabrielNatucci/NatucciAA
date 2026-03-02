@@ -444,6 +444,27 @@ pub const BluetoothManager = struct {
             "Pause", // método correto
         );
     }
+
+    pub fn unpauseMusic(self: *BluetoothManager) !void {
+        std.debug.print("Pausando música...\n", .{});
+
+        var buf: [128]u8 = undefined;
+        const path = try buildPathToMusic(
+            &buf,
+            std.mem.sliceTo(self.adapter_path, 0),
+            if (self.connectedAddress) |addr| addr[0..] else null,
+        );
+        buf[path.len] = 0;
+
+        std.debug.print("path: '{s}'\n", .{path});
+
+        try self.dbus.callMethod(
+            "org.bluez",
+            path.ptr,
+            "org.bluez.MediaControl1", // interface correta para mídia
+            "Pause", // método correto
+        );
+    }
 };
 
 fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?Device {
