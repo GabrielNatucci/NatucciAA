@@ -17,25 +17,34 @@ const TAMANHO_FONTE_TITULO: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.045)
 const POSICAO_TITULO_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.04); // Aprox. 30 para 720p
 const POSICAO_TITULO_X: c_int = @divTrunc(LARGURA_TELA, 2); // Aprox. 30 para 720p
 
-const LARGURA_BOTAO_VOLTAR: c_int = @intFromFloat(@as(f32, LARGURA_TELA) * (140.0 / 1280.0));
-const ALTURA_BOTAO_VOLTAR: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * (120.0 / 720.0));
+const X_BOTAO_VOLTAR: c_int = @intFromFloat(@as(f32, LARGURA_TELA) * 0.04);
+const Y_BOTAO_VOLTAR: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.05);
+
+const DISTANCIA_BOTOES_MUSICA: c_int = 490;
+const ALTURA_BOTOES_MUSICA: c_int = 600;
+const ANTERIOR_MUSICA_BOTAO: c_int = 150;
+const PAUSAR_MUSICA_BOTAO: c_int = ANTERIOR_MUSICA_BOTAO + DISTANCIA_BOTOES_MUSICA;
+const PROXIMA_MUSICA_BOTAO: c_int = PAUSAR_MUSICA_BOTAO + DISTANCIA_BOTOES_MUSICA;
 
 pub const MusicScene = struct {
     btManager: *bt.BluetoothManager,
     pageName: Text,
     goBackImg: Image,
-    pauseImg: Image,
+    nextMusicImg: Image,
+    prevMusicImg: Image,
 
     pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator, bluetooth: *bt.BluetoothManager) !MusicScene {
         std.debug.print("\nInicializando musicScene...\n", .{});
 
-        const backTexture = try Image.init("res/images/backButton.png", renderer, allocator, LARGURA_BOTAO_VOLTAR, ALTURA_BOTAO_VOLTAR);
-        const pauseImage = try Image.init("res/images/backButton.png", renderer, allocator, 100, 100);
+        const backTexture = try Image.init("res/images/backButton.png", renderer, allocator, X_BOTAO_VOLTAR, Y_BOTAO_VOLTAR, 0.3);
+        const nextImage = try Image.init("res/images/nextmusic.png", renderer, allocator, PROXIMA_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
+        const prevImage = try Image.init("res/images/previousmusic.png", renderer, allocator, ANTERIOR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
 
         return .{
             .goBackImg = backTexture,
             .btManager = bluetooth,
-            .pauseImg = pauseImage,
+            .nextMusicImg = nextImage,
+            .prevMusicImg = prevImage,
             .pageName = try Text.init(
                 "Music",
                 renderer,
@@ -56,7 +65,8 @@ pub const MusicScene = struct {
     pub fn deinit(self: *MusicScene) void {
         std.debug.print("Desligando musicScene\n", .{});
         self.pageName.deinit();
-        self.pauseImg.deinit();
+        self.nextMusicImg.deinit();
+        self.prevMusicImg.deinit();
         self.goBackImg.deinit();
     }
 
@@ -71,8 +81,9 @@ pub const MusicScene = struct {
         _ = renderer;
 
         self.pageName.render();
-        self.goBackImg.render(0.3);
-        // self.pauseImg.render(0.5);
+        self.goBackImg.render();
+        self.nextMusicImg.render();
+        self.prevMusicImg.render();
     }
 
     pub fn handleEvent(self: *MusicScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
@@ -80,7 +91,7 @@ pub const MusicScene = struct {
             sdl.SDL_MOUSEBUTTONUP => {
                 const mouseX = event.button.x;
                 const mouseY = event.button.y;
-                if (SceneUtil.isBackButton(mouseY, mouseX)) {
+                if (self.goBackImg.hasBeenClicked(mouseX, mouseY)) {
                     sManager.setScene(sManager.homeScene) catch |err| {
                         std.debug.print("Erro ao trocar de cena: {}\n", .{err});
                     };
