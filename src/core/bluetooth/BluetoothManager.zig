@@ -440,8 +440,8 @@ pub const BluetoothManager = struct {
         try self.dbus.callMethod(
             "org.bluez",
             path.ptr,
-            "org.bluez.MediaControl1", // interface correta para mídia
-            "Pause", // método correto
+            "org.bluez.MediaControl1",
+            "Pause",
         );
     }
 
@@ -461,8 +461,50 @@ pub const BluetoothManager = struct {
         try self.dbus.callMethod(
             "org.bluez",
             path.ptr,
-            "org.bluez.MediaControl1", // interface correta para mídia
-            "Pause", // método correto
+            "org.bluez.MediaControl1",
+            "Pause",
+        );
+    }
+
+    pub fn nextMusic(self: *BluetoothManager) !void {
+        std.debug.print("Próxima música...\n", .{});
+
+        var buf: [128]u8 = undefined;
+        const path = try buildPathToMusic(
+            &buf,
+            std.mem.sliceTo(self.adapter_path, 0),
+            if (self.connectedAddress) |addr| addr[0..] else null,
+        );
+        buf[path.len] = 0;
+
+        std.debug.print("path: '{s}'\n", .{path});
+
+        try self.dbus.callMethod(
+            "org.bluez",
+            path.ptr,
+            "org.bluez.MediaControl1",
+            "Next",
+        );
+    }
+
+    pub fn previousMusic(self: *BluetoothManager) !void {
+        std.debug.print("Música anterior...\n", .{});
+
+        var buf: [128]u8 = undefined;
+        const path = try buildPathToMusic(
+            &buf,
+            std.mem.sliceTo(self.adapter_path, 0),
+            if (self.connectedAddress) |addr| addr[0..] else null,
+        );
+        buf[path.len] = 0;
+
+        std.debug.print("path: '{s}'\n", .{path});
+
+        try self.dbus.callMethod(
+            "org.bluez",
+            path.ptr,
+            "org.bluez.MediaControl1",
+            "Next",
         );
     }
 };

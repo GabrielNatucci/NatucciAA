@@ -20,9 +20,9 @@ const POSICAO_TITULO_X: c_int = @divTrunc(LARGURA_TELA, 2); // Aprox. 30 para 72
 const X_BOTAO_VOLTAR: c_int = @intFromFloat(@as(f32, LARGURA_TELA) * 0.04);
 const Y_BOTAO_VOLTAR: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.05);
 
-const DISTANCIA_BOTOES_MUSICA: c_int = 490;
+const ANTERIOR_MUSICA_BOTAO: c_int = 300;
+const DISTANCIA_BOTOES_MUSICA: c_int = @divTrunc(LARGURA_TELA - (ANTERIOR_MUSICA_BOTAO * 2), 2);
 const ALTURA_BOTOES_MUSICA: c_int = 600;
-const ANTERIOR_MUSICA_BOTAO: c_int = 150;
 const PAUSAR_MUSICA_BOTAO: c_int = ANTERIOR_MUSICA_BOTAO + DISTANCIA_BOTOES_MUSICA;
 const PROXIMA_MUSICA_BOTAO: c_int = PAUSAR_MUSICA_BOTAO + DISTANCIA_BOTOES_MUSICA;
 
@@ -32,6 +32,7 @@ pub const MusicScene = struct {
     goBackImg: Image,
     nextMusicImg: Image,
     prevMusicImg: Image,
+    pauseMusicImg: Image,
 
     pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator, bluetooth: *bt.BluetoothManager) !MusicScene {
         std.debug.print("\nInicializando musicScene...\n", .{});
@@ -39,12 +40,14 @@ pub const MusicScene = struct {
         const backTexture = try Image.init("res/images/backButton.png", renderer, allocator, X_BOTAO_VOLTAR, Y_BOTAO_VOLTAR, 0.3);
         const nextImage = try Image.init("res/images/nextmusic.png", renderer, allocator, PROXIMA_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
         const prevImage = try Image.init("res/images/previousmusic.png", renderer, allocator, ANTERIOR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
+        const pauseImage = try Image.init("res/images/pausemusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.4);
 
         return .{
             .goBackImg = backTexture,
             .btManager = bluetooth,
             .nextMusicImg = nextImage,
             .prevMusicImg = prevImage,
+            .pauseMusicImg = pauseImage,
             .pageName = try Text.init(
                 "Music",
                 renderer,
@@ -67,6 +70,7 @@ pub const MusicScene = struct {
         self.pageName.deinit();
         self.nextMusicImg.deinit();
         self.prevMusicImg.deinit();
+        self.pauseMusicImg.deinit();
         self.goBackImg.deinit();
     }
 
@@ -84,25 +88,24 @@ pub const MusicScene = struct {
         self.goBackImg.render();
         self.nextMusicImg.render();
         self.prevMusicImg.render();
+        self.pauseMusicImg.render();
     }
 
     pub fn handleEvent(self: *MusicScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
         switch (event.type) {
             sdl.SDL_MOUSEBUTTONUP => {
-                const mouseX = event.button.x;
-                const mouseY = event.button.y;
-                if (self.goBackImg.hasBeenClicked(mouseX, mouseY)) {
-                    sManager.setScene(sManager.homeScene) catch |err| {
-                        std.debug.print("Erro ao trocar de cena: {}\n", .{err});
-                    };
+                const x = event.button.x;
+                const y = event.button.y;
 
-                    return;
+                if (self.goBackImg.hasBeenClicked(x, y)) {
+                    sManager.setScene(sManager.homeScene) catch |err| std.debug.print("Erro ao trocar de cena: {}\n", .{err});
+                } else if (self.pauseMusicImg.hasBeenClicked(x, y)) {
+                    self.btManager.pauseMusic() catch |err| std.debug.print("Erro ao pausar música: {}\n", .{err});
+                } else if (self.nextMusicImg.hasBeenClicked(x, y)) {
+                    self.btManager.nextMusic() catch |err| std.debug.print("Erro ao passar a música: {}\n", .{err});
+                } else if (self.prevMusicImg.hasBeenClicked(x, y)) {
+                    self.btManager.previousMusic() catch |err| std.debug.print("Erro ao voltar na música anterior: {}\n", .{err});
                 }
-
-                self.btManager.pauseMusic() catch |err| {
-                    std.debug.print("Erro ao pausar música: {}\n", .{err});
-                    return;
-                };
             },
             else => {},
         }
