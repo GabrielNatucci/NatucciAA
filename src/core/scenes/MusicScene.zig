@@ -33,7 +33,6 @@ pub const MusicScene = struct {
     nextMusicImg: Image,
     prevMusicImg: Image,
     pauseMusicImg: Image,
-    playMusicImg: Image,
 
     pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator, bluetooth: *bt.BluetoothManager) !MusicScene {
         std.debug.print("\nInicializando musicScene...\n", .{});
@@ -118,6 +117,9 @@ pub const MusicScene = struct {
     }
 
     pub fn inOfFocus(self: *MusicScene) void {
-        _ = self;
+        self.btManager.getMusicPlayer() catch |err| {
+            std.debug.print("Erro ao pausar música: {}\n", .{err});
+            return;
+        };
     }
 };

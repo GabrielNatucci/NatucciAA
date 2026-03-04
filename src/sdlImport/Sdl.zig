@@ -6,5 +6,6 @@ pub const sdl = @cImport({
 });
 
 pub const dbus = @cImport({
+    @cDefine("DBUS_API_SUBJECT_TO_CHANGE", "1");
     @cInclude("dbus/dbus.h");
 });

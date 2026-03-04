@@ -77,6 +77,66 @@ pub const BluetoothManager = struct {
         }
     }
 
+    pub fn getMusicPlayer(self: *BluetoothManager) !void {
+        std.debug.print("Pegando player...\n", .{});
+
+        var buf: [128]u8 = undefined;
+        const path = try buildPathToMusic(
+            &buf,
+            std.mem.sliceTo(self.adapter_path, 0),
+            if (self.connectedAddress) |addr| addr[0..] else null,
+        );
+        buf[path.len] = 0;
+
+        const msg = c.dbus_message_new_method_call(
+            "org.bluez",
+            path.ptr,
+            "org.freedesktop.DBus.Properties",
+            "Get",
+        ) orelse return error.DBusMessageNull;
+
+        var msgIter: c.DBusMessageIter = undefined;
+        _ = c.dbus_message_iter_init(msg, &msgIter);
+
+        const arg0 = "org.bluez.MediaControl1";
+        const arg1 = "Player";
+
+        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, arg0);
+        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, arg1);
+
+        var dbusError: c.DBusError = undefined;
+
+        c.dbus_error_init(&dbusError);
+
+        const reply = c.dbus_connection_send_with_reply_and_block(self.dbus.conn, msg, -1, dbusError);
+
+        if (reply == null) {
+            return error.SemRespostaDoDbus;
+        }
+
+        var iter: c.DBusMessageIter = undefined;
+
+        if (c.dbus_message_iter_init(msg, &iter) == 0) {
+            return;
+        }
+
+        if (c.dbus_message_iter_get_arg_type(&iter) == c.DBUS_TYPE_VARIANT) {
+            var variant: c.DBusMessageIter = undefined;
+            c.dbus_message_iter_recurse(&iter, &variant);
+
+            if (c.dbus_message_iter_get_arg_type(&variant) == c.DBUS_TYPE_OBJECT_PATH) {
+                var player_path: [*c]const u8 = undefined;
+                c.dbus_message_iter_get_basic(&variant, &player_path);
+
+                std.debug.print("Player path: {s}\n", .{
+                    std.mem.span(player_path),
+                });
+            }
+        }
+
+        c.dbus_message_unref(msg);
+    }
+
     pub fn listDevices(self: *BluetoothManager) !void {
         const reply = try self.dbus.getManagedObjects("org.bluez", "/");
         if (reply == null) return;
