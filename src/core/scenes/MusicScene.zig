@@ -7,8 +7,9 @@ const sdl = @import("../../sdlImport/Sdl.zig").sdl;
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
 const timeUtil = @import("../../util/TimeUtil.zig");
 const SceneManager = @import("../SceneManager.zig").SceneManager;
-const Text = @import("./components/Text.zig").Text;
 const Image = @import("./components/Image.zig").Image;
+const Text = @import("./components/Text.zig").Text;
+const TrackInfo = @import("./../bluetooth/Music/TrackInfo.zig").TrackInfo;
 const SceneUtil = @import("./sceneUtil/SceneUtil.zig");
 const Scene = @import("Scene.zig");
 
@@ -33,6 +34,8 @@ pub const MusicScene = struct {
     nextMusicImg: Image,
     prevMusicImg: Image,
     pauseMusicImg: Image,
+    lastTimeSeconds: f32,
+    trackInfo: ?TrackInfo = null,
 
     pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator, bluetooth: *bt.BluetoothManager) !MusicScene {
         std.debug.print("\nInicializando musicScene...\n", .{});
@@ -49,6 +52,7 @@ pub const MusicScene = struct {
             .nextMusicImg = nextImage,
             .prevMusicImg = prevImage,
             .pauseMusicImg = pauseImage,
+            .lastTimeSeconds = 0.0,
             .pageName = try Text.init(
                 "Music",
                 renderer,
@@ -76,10 +80,25 @@ pub const MusicScene = struct {
     }
 
     pub fn update(self: *MusicScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
-        _ = delta_time;
         _ = renderer;
         _ = active;
-        _ = self;
+
+        self.lastTimeSeconds += delta_time;
+        if (self.lastTimeSeconds >= 1.0) {
+            self.lastTimeSeconds = 0;
+
+            self.trackInfo = .{};
+            self.btManager.getTrackInfo(&self.trackInfo.?) catch |err| {
+                std.debug.print("Erro ao obter informações da música: {}\n", .{err});
+                return;
+            };
+
+            if (self.trackInfo) |trackInfo| {
+                std.debug.print("\nTítulo: {s}\n", .{trackInfo.getTitle()});
+                std.debug.print("Artista: {s}\n", .{trackInfo.getArtist()});
+                std.debug.print("Duração: {}ms\n", .{trackInfo.duration});
+            }
+        }
     }
 
     pub fn render(self: *MusicScene, renderer: *sdl.SDL_Renderer) void {
