@@ -7,14 +7,18 @@ const sdl = @import("../../sdlImport/Sdl.zig").sdl;
 const textureUtil = @import("../../util/SDLTextureUtil.zig");
 const timeUtil = @import("../../util/TimeUtil.zig");
 const SceneManager = @import("../SceneManager.zig").SceneManager;
+const TrackInfo = @import("./../bluetooth/Music/TrackInfo.zig").TrackInfo;
 const Image = @import("./components/Image.zig").Image;
 const Text = @import("./components/Text.zig").Text;
-const TrackInfo = @import("./../bluetooth/Music/TrackInfo.zig").TrackInfo;
 const SceneUtil = @import("./sceneUtil/SceneUtil.zig");
 const Scene = @import("Scene.zig");
 
 const BRANCO: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
+const CINZINHA: sdl.SDL_Color = .{ .a = 255, .r = 215, .g = 215, .b = 225 };
+const CINZA: sdl.SDL_Color = .{ .a = 0, .r = 150, .g = 150, .b = 150 };
 const TAMANHO_FONTE_TITULO: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.045); // Aprox. 32 para 720p
+const TAMANHO_FONTE_ARTISTA: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.1); // Aprox. 32 para 720p
+const TAMANHO_FONTE_ALBUM: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.030); // Aprox. 32 para 720p
 const POSICAO_TITULO_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.04); // Aprox. 30 para 720p
 const POSICAO_TITULO_X: c_int = @divTrunc(LARGURA_TELA, 2); // Aprox. 30 para 720p
 
@@ -23,9 +27,9 @@ const Y_BOTAO_VOLTAR: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.05);
 
 const ANTERIOR_MUSICA_BOTAO: c_int = 300;
 const DISTANCIA_BOTOES_MUSICA: c_int = @divTrunc(LARGURA_TELA - (ANTERIOR_MUSICA_BOTAO * 2), 2);
-const ALTURA_BOTOES_MUSICA: c_int = 600;
-const PAUSAR_MUSICA_BOTAO: c_int = ANTERIOR_MUSICA_BOTAO + DISTANCIA_BOTOES_MUSICA;
-const PROXIMA_MUSICA_BOTAO: c_int = PAUSAR_MUSICA_BOTAO + DISTANCIA_BOTOES_MUSICA;
+const ALTURA_BOTOES_MUSICA_Y: c_int = 600;
+const PAUSAR_MUSICA_BOTAO_X: c_int = ANTERIOR_MUSICA_BOTAO + DISTANCIA_BOTOES_MUSICA;
+const PROXIMA_MUSICA_BOTAO: c_int = PAUSAR_MUSICA_BOTAO_X + DISTANCIA_BOTOES_MUSICA;
 
 pub const MusicScene = struct {
     btManager: *bt.BluetoothManager,
@@ -38,6 +42,7 @@ pub const MusicScene = struct {
     lastTimeSeconds: f32,
     musicText: ?Text = null,
     artistText: ?Text = null,
+    albumText: ?Text = null,
     progress: ?Text = null,
     trackInfo: ?TrackInfo = null,
     allocator: std.mem.Allocator,
@@ -46,10 +51,10 @@ pub const MusicScene = struct {
         std.debug.print("\nInicializando musicScene...\n", .{});
 
         const backTexture = try Image.init("res/images/backButton.png", renderer, allocator, X_BOTAO_VOLTAR, Y_BOTAO_VOLTAR, 0.3);
-        const nextImage = try Image.init("res/images/nextmusic.png", renderer, allocator, PROXIMA_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
-        const prevImage = try Image.init("res/images/previousmusic.png", renderer, allocator, ANTERIOR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
-        const pauseImage = try Image.init("res/images/pausemusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.4);
-        const resumeImage = try Image.init("res/images/playmusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.4);
+        const nextImage = try Image.init("res/images/nextmusic.png", renderer, allocator, PROXIMA_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA_Y, 0.3);
+        const prevImage = try Image.init("res/images/previousmusic.png", renderer, allocator, ANTERIOR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA_Y, 0.3);
+        const pauseImage = try Image.init("res/images/pausemusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO_X, ALTURA_BOTOES_MUSICA_Y, 0.4);
+        const resumeImage = try Image.init("res/images/playmusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO_X, ALTURA_BOTOES_MUSICA_Y, 0.4);
 
         return .{
             .goBackImg = backTexture,
@@ -61,7 +66,7 @@ pub const MusicScene = struct {
             .allocator = allocator,
             .resumeMusicImg = resumeImage,
             .pageName = try Text.init(
-                "Music",
+                "Musicas",
                 renderer,
                 allocator,
                 TAMANHO_FONTE_TITULO,
@@ -104,6 +109,11 @@ pub const MusicScene = struct {
             p.deinit();
             self.artistText = null;
         }
+
+        if (self.albumText) |*p| {
+            p.deinit();
+            self.albumText = null;
+        }
     }
 
     pub fn update(self: *MusicScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
@@ -120,34 +130,47 @@ pub const MusicScene = struct {
             };
 
             if (self.trackInfo) |trackInfo| {
-                var title_buf: [256]u8 = undefined;
-                var artist_buf: [256]u8 = undefined;
+                var title_buf: [512]u8 = undefined;
+                var artist_buf: [100]u8 = undefined;
+                var album_buf: [100]u8 = undefined;
                 var progress_buf: [32]u8 = undefined;
 
                 const progress_z = trackInfo.getPositionFormatted(&progress_buf);
                 const title_z = std.fmt.bufPrintZ(&title_buf, "{s}", .{trackInfo.getTitle()}) catch return;
                 const artistname_z = std.fmt.bufPrintZ(&artist_buf, "{s}", .{trackInfo.getArtist()}) catch return;
+                const album_z = std.fmt.bufPrintZ(&album_buf, "{s}", .{trackInfo.getAlbum()}) catch return;
 
                 self.deinitMusicInfo();
 
-                self.musicText = Text.init(title_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 50) catch |err| {
+                self.musicText = Text.init(title_z.ptr, renderer, self.allocator, TAMANHO_FONTE_ARTISTA, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 160) catch |err| {
                     std.debug.print("Erro: {}\n", .{err});
                     return;
                 };
 
-                self.artistText = Text.init(artistname_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2) catch |err| {
+                self.artistText = Text.init(artistname_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 90) catch |err| {
                     std.debug.print("Erro: {}\n", .{err});
                     self.musicText.?.deinit();
                     self.musicText = null;
                     return;
                 };
 
-                self.progress = Text.init(progress_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 + 50) catch |err| {
+                self.progress = Text.init(progress_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_BOTOES_MUSICA_Y - 160) catch |err| {
                     std.debug.print("Erro: {}\n", .{err});
                     self.musicText.?.deinit();
                     self.musicText = null;
                     self.artistText.?.deinit();
                     self.artistText = null;
+                    return;
+                };
+
+                self.albumText = Text.init(album_z.ptr, renderer, self.allocator, TAMANHO_FONTE_ALBUM, CINZINHA, LARGURA_TELA / 2, ALTURA_TELA / 2 - 50) catch |err| {
+                    std.debug.print("Erro: {}\n", .{err});
+                    self.musicText.?.deinit();
+                    self.musicText = null;
+                    self.artistText.?.deinit();
+                    self.artistText = null;
+                    self.progress.?.deinit();
+                    self.progress = null;
                     return;
                 };
 
@@ -164,8 +187,6 @@ pub const MusicScene = struct {
     }
 
     pub fn render(self: *MusicScene, renderer: *sdl.SDL_Renderer) void {
-        _ = renderer;
-
         self.pageName.render();
         self.goBackImg.render();
 
@@ -190,6 +211,34 @@ pub const MusicScene = struct {
             if (self.artistText) |artistText| {
                 artistText.render();
             }
+
+            if (self.albumText) |albumText| {
+                albumText.render();
+            }
+
+            _ = sdl.SDL_SetRenderDrawColor(renderer, CINZA.r, CINZA.g, CINZA.b, CINZA.a);
+            var linhaDuracaoRect: sdl.SDL_Rect = .{
+                .x = @divTrunc(LARGURA_TELA - @divTrunc(@as(f32, LARGURA_TELA), 1.2), 2),
+                .y = ALTURA_BOTOES_MUSICA_Y - 120,
+                .w = @divTrunc(@as(f32, LARGURA_TELA), 1.2),
+                .h = ALTURA_TELA / 55,
+            };
+            _ = sdl.SDL_RenderDrawRect(renderer, &linhaDuracaoRect);
+            _ = sdl.SDL_RenderFillRect(renderer, &linhaDuracaoRect);
+
+            _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, BRANCO.a);
+            var linhaDuracaoProgressoRect: sdl.SDL_Rect = .{
+                .x = @divTrunc(LARGURA_TELA - @divTrunc(@as(f32, LARGURA_TELA), 1.2), 2),
+                .y = ALTURA_BOTOES_MUSICA_Y - 120,
+                .w = @intFromFloat(@divTrunc(@as(f32, LARGURA_TELA), 1.2) * (trackInfo.getProgressPercent() * 0.01)),
+                .h = ALTURA_TELA / 55,
+            };
+            // std.debug.print("Progresso %: {d}\n", .{(trackInfo.getProgressPercent()*0.01)});
+            // std.debug.print("Progresso teste: {d}\n", .{@divTrunc(@as(f32, LARGURA_TELA), 1.2) });
+            // std.debug.print("Progresso largura: {d}\n", .{@divTrunc(@as(f32, LARGURA_TELA), 1.2) * (trackInfo.getProgressPercent()/10)});
+
+            _ = sdl.SDL_RenderDrawRect(renderer, &linhaDuracaoProgressoRect);
+            _ = sdl.SDL_RenderFillRect(renderer, &linhaDuracaoProgressoRect);
         }
     }
 
