@@ -26,12 +26,15 @@ pub const TrackInfo = struct {
         return @as(f32, @floatFromInt(self.position)) / @as(f32, @floatFromInt(self.duration)) * 100.0;
     }
 
-    pub fn getPositionFormatted(self: *const TrackInfo, buf: []u8) []u8 {
+    pub fn getPositionFormatted(self: *const TrackInfo, buf: []u8) [:0]u8 {
         const pos_seg = self.position / 1000;
         const dur_seg = self.duration / 1000;
-        return std.fmt.bufPrint(buf, "{}:{:0>2} / {}:{:0>2}", .{
+        return std.fmt.bufPrintZ(buf, "{}:{:0>2} / {}:{:0>2}", .{
             pos_seg / 60, pos_seg % 60,
             dur_seg / 60, dur_seg % 60,
-        }) catch buf[0..0];
+        }) catch blk: {
+            buf[0] = 0;
+            break :blk buf[0..0 :0];
+        };
     }
 };

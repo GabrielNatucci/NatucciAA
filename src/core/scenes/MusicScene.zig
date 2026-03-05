@@ -35,7 +35,10 @@ pub const MusicScene = struct {
     prevMusicImg: Image,
     pauseMusicImg: Image,
     lastTimeSeconds: f32,
+    musicText: ?Text = null,
+    progress: ?Text = null,
     trackInfo: ?TrackInfo = null,
+    allocator: std.mem.Allocator,
 
     pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator, bluetooth: *bt.BluetoothManager) !MusicScene {
         std.debug.print("\nInicializando musicScene...\n", .{});
@@ -53,6 +56,7 @@ pub const MusicScene = struct {
             .prevMusicImg = prevImage,
             .pauseMusicImg = pauseImage,
             .lastTimeSeconds = 0.0,
+            .allocator = allocator,
             .pageName = try Text.init(
                 "Music",
                 renderer,
@@ -77,10 +81,22 @@ pub const MusicScene = struct {
         self.prevMusicImg.deinit();
         self.pauseMusicImg.deinit();
         self.goBackImg.deinit();
+
+        self.deinitMusicInfo();
+    }
+
+    pub fn deinitMusicInfo(self: *MusicScene) void {
+        if (self.musicText) |*t| {
+            t.deinit();
+            self.musicText = null;
+        }
+        if (self.progress) |*p| {
+            p.deinit();
+            self.progress = null;
+        }
     }
 
     pub fn update(self: *MusicScene, delta_time: f32, renderer: *sdl.SDL_Renderer, active: bool) void {
-        _ = renderer;
         _ = active;
 
         self.lastTimeSeconds += delta_time;
@@ -94,11 +110,31 @@ pub const MusicScene = struct {
             };
 
             if (self.trackInfo) |trackInfo| {
-                var buf: [32]u8 = undefined;
+                var title_buf: [256]u8 = undefined;
+                var progress_buf: [32]u8 = undefined;
+
+                const progress_z = trackInfo.getPositionFormatted(&progress_buf);
+                const title_z = std.fmt.bufPrintZ(&title_buf, "{s}", .{trackInfo.getTitle()}) catch return;
+
+                self.deinitMusicInfo();
+
+                self.musicText = Text.init(title_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 50) catch |err| {
+                    std.debug.print("Erro: {}\n", .{err});
+                    return;
+                };
+                self.progress = Text.init(progress_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 + 50) catch |err| {
+                    std.debug.print("Erro: {}\n", .{err});
+                    self.musicText.?.deinit();
+                    self.musicText = null;
+                    return;
+                };
+
                 std.debug.print("\nTítulo: {s}\n", .{trackInfo.getTitle()});
                 std.debug.print("Artista: {s}\n", .{trackInfo.getArtist()});
                 std.debug.print("Duração: {}ms\n", .{trackInfo.duration});
-                std.debug.print("Progresso: {s}\n", .{trackInfo.getPositionFormatted(&buf),});
+                std.debug.print("Progresso: {s}\n", .{
+                    trackInfo.getPositionFormatted(&progress_buf),
+                });
                 std.debug.print("Progresso: {}%\n", .{trackInfo.getProgressPercent()});
             }
         }
@@ -112,6 +148,14 @@ pub const MusicScene = struct {
         self.nextMusicImg.render();
         self.prevMusicImg.render();
         self.pauseMusicImg.render();
+
+        if (self.musicText) |musicText| {
+            musicText.render();
+        }
+
+        if (self.progress) |progressText| {
+            progressText.render();
+        }
     }
 
     pub fn handleEvent(self: *MusicScene, sManager: *SceneManager, event: *sdl.SDL_Event) void {
@@ -139,6 +183,7 @@ pub const MusicScene = struct {
     }
 
     pub fn inOfFocus(self: *MusicScene) void {
+        self.lastTimeSeconds = 5.0;
         self.btManager.getMusicPlayer() catch |err| {
             std.debug.print("Erro ao pausar música: {}\n", .{err});
             return;
