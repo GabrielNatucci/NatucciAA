@@ -33,10 +33,17 @@ pub const Text = struct {
         try textTemp.append(0);
 
         const textSurface = sdl.TTF_RenderText_Blended(fonte, textTemp.items.ptr, color);
-        if (textSurface == null) return error.SurfaceDoTextoNaoFoiCriada;
+        if (textSurface == null) {
+            std.debug.print("Erro ao criar surface de texto: {s}", .{sdl.SDL_GetError()});
+            return error.surfaceNaoCriada;
+        }
         defer sdl.SDL_FreeSurface(textSurface);
 
         const textTexture = sdl.SDL_CreateTextureFromSurface(renderer, textSurface);
+        if (textTexture == null) {
+            std.debug.print("Erro ao criar surface de texto: {s}", .{sdl.SDL_GetError()});
+            return error.texturaNaoCriada;
+        }
         if (textTexture == null) return error.TexturaDoTextoNaoFoiCriada;
 
         const width: c_int = textSurface.*.w;

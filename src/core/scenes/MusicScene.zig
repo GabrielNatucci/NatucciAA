@@ -130,6 +130,8 @@ pub const MusicScene = struct {
             };
 
             if (self.trackInfo) |trackInfo| {
+                if (trackInfo.getAlbum().len == 0)  return;
+
                 var title_buf: [512]u8 = undefined;
                 var artist_buf: [100]u8 = undefined;
                 var album_buf: [100]u8 = undefined;

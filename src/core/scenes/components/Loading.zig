@@ -15,11 +15,17 @@ pub const Loading = struct {
 
     pub fn init(renderer: *sdl.SDL_Renderer, rect: sdl.SDL_Rect) !Loading {
         const surface: ?*sdl.SDL_Surface = sdl.IMG_Load("res/images/loading.png");
-        if (surface == null) return error.surfaceNaoCriada;
+        if (surface == null) {
+            std.debug.print("Erro ao criar surface de texto: {s}", .{sdl.SDL_GetError()});
+            return error.surfaceNaoCriada;
+        }
         defer sdl.SDL_FreeSurface(surface.?);
 
         const texture: ?*sdl.SDL_Texture = sdl.SDL_CreateTextureFromSurface(renderer, surface);
-        if (texture == null) return error.texturaNaoCriada;
+        if (texture == null) {
+            std.debug.print("Erro ao criar surface de texto: {s}", .{sdl.SDL_GetError()});
+            return error.texturaNaoCriada;
+        }
 
         return Loading{
             .width = rect.w,
