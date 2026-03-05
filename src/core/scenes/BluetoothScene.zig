@@ -96,6 +96,8 @@ pub const BluetoothScene = struct {
 
         const loading: Loading = try Loading.init(renderer, LOADING_MODAL_POS);
 
+        try bluetooth.listDevices();
+
         return .{
             .fonteBluetooth = fonte,
             .goBackTexture = backTexture,

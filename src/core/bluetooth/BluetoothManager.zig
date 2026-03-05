@@ -1,5 +1,6 @@
 const DBus = @import("../dbus/dbus.zig").DBus;
 const c = @import("../../sdlImport/Sdl.zig").dbus;
+const DbusError = @import("../../sdlImport/Sdl.zig").DBusError;
 const std = @import("std");
 const Device = @import("./Device.zig").Device;
 const ArrayList = std.array_list.Managed;
@@ -96,17 +97,18 @@ pub const BluetoothManager = struct {
         ) orelse return error.DBusMessageNull;
 
         var msgIter: c.DBusMessageIter = undefined;
-        _ = c.dbus_message_iter_init(msg, &msgIter);
+        _ = c.dbus_message_iter_init_append(msg, &msgIter);
 
-        const arg0 = "org.bluez.MediaControl1";
-        const arg1 = "Player";
+        const arg0: [*:0]const u8 = "org.bluez.MediaControl1";
+        const arg1: [*:0]const u8 = "Player";
 
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, arg0);
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, arg1);
+        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&arg0));
+        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&arg1));
 
-        var dbusError: c.DBusError = undefined;
-
-        c.dbus_error_init(&dbusError);
+        var bufErr: DbusError = undefined;
+        const dbusError: *c.DBusError = @ptrCast(&bufErr);
+        c.dbus_error_init(dbusError);
+        defer c.dbus_error_free(dbusError);
 
         const reply = c.dbus_connection_send_with_reply_and_block(self.dbus.conn, msg, -1, dbusError);
 
@@ -126,7 +128,7 @@ pub const BluetoothManager = struct {
 
             if (c.dbus_message_iter_get_arg_type(&variant) == c.DBUS_TYPE_OBJECT_PATH) {
                 var player_path: [*c]const u8 = undefined;
-                c.dbus_message_iter_get_basic(&variant, &player_path);
+                c.dbus_message_iter_get_basic(&variant, @ptrCast(&player_path));
 
                 std.debug.print("Player path: {s}\n", .{
                     std.mem.span(player_path),
@@ -636,6 +638,17 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
         var addressCopy = ArrayList(u8).init(self.allocator);
         try addressCopy.appendSlice(address.?);
         try addressCopy.append(0);
+
+        if (paired) {
+            self.mu.lock();
+            defer self.mu.unlock();
+            const addressTemp = addressCopy.items;
+            self.connectedAddress = blk: {
+                var addr: [MAC_LEN]u8 = undefined;
+                @memcpy(&addr, addressTemp[0..MAC_LEN]);
+                break :blk addr;
+            };
+        }
 
         return Device.init(
             nomeCopy,

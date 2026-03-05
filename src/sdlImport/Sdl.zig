@@ -6,6 +6,12 @@ pub const sdl = @cImport({
 });
 
 pub const dbus = @cImport({
-    @cDefine("DBUS_API_SUBJECT_TO_CHANGE", "1");
     @cInclude("dbus/dbus.h");
 });
+
+pub const DBusError = extern struct {
+    name: [*c]const u8,
+    message: [*c]const u8,
+    dummy: isize,
+    padding: *opaque {},
+};
