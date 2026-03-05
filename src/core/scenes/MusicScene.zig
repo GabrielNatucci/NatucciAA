@@ -48,7 +48,7 @@ pub const MusicScene = struct {
         const nextImage = try Image.init("res/images/nextmusic.png", renderer, allocator, PROXIMA_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
         const prevImage = try Image.init("res/images/previousmusic.png", renderer, allocator, ANTERIOR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
         const pauseImage = try Image.init("res/images/pausemusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.4);
-        const resumeImage = try Image.init("res/images/playmusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.4);
+        const resumeImage = try Image.init("res/images/playmusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
 
         return .{
             .goBackImg = backTexture,
@@ -103,7 +103,7 @@ pub const MusicScene = struct {
         _ = active;
 
         self.lastTimeSeconds += delta_time;
-        if (self.lastTimeSeconds >= 1.0) {
+        if (self.lastTimeSeconds >= 0.5) {
             self.lastTimeSeconds = 0;
 
             self.trackInfo = .{};
@@ -180,27 +180,20 @@ pub const MusicScene = struct {
                     sManager.setScene(sManager.homeScene) catch |err| std.debug.print("Erro ao trocar de cena: {}\n", .{err});
                 }
 
-                var doneSomething: bool = false;
-
                 if (self.trackInfo) |trackInfo| {
                     if (self.pauseMusicImg.hasBeenClicked(x, y)) {
                         self.btManager.pauseMusic() catch |err| std.debug.print("Erro ao pausar música: {}\n", .{err});
-                        doneSomething = true;
                     } else if (self.nextMusicImg.hasBeenClicked(x, y)) {
                         self.btManager.nextMusic() catch |err| std.debug.print("Erro ao passar a música: {}\n", .{err});
-                        doneSomething = true;
                     } else if (self.prevMusicImg.hasBeenClicked(x, y)) {
                         self.btManager.previousMusic() catch |err| std.debug.print("Erro ao voltar na música anterior: {}\n", .{err});
-                        doneSomething = true;
-                    } else if (trackInfo.isPlaying() == true and self.pauseMusicImg.hasBeenClicked(x, y)) {
-                        self.btManager.pauseMusic() catch |err| std.debug.print("Erro ao pausar música: {}\n", .{err});
-                        doneSomething = true;
-                    } else if (trackInfo.isPlaying() == false and self.resumeMusicImg.hasBeenClicked(x, y)) {
-                        self.btManager.unpauseMusic() catch |err| std.debug.print("Erro ao despausar a música: {}\n", .{err});
-                        doneSomething = true;
                     }
 
-                    if (doneSomething) self.lastTimeSeconds = 5.0;
+                    if (trackInfo.isPlaying() == true and self.pauseMusicImg.hasBeenClicked(x, y)) {
+                        self.btManager.pauseMusic() catch |err| std.debug.print("Erro ao pausar música: {}\n", .{err});
+                    } else if (self.resumeMusicImg.hasBeenClicked(x, y)) {
+                        self.btManager.unpauseMusic() catch |err| std.debug.print("Erro ao despausar a música: {}\n", .{err});
+                    }
                 }
             },
             else => {},

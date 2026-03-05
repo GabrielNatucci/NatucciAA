@@ -556,7 +556,7 @@ pub const BluetoothManager = struct {
             "org.bluez",
             path.ptr,
             "org.bluez.MediaControl1",
-            "Next",
+            "Previous",
         );
     }
 
