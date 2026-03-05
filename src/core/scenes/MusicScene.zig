@@ -17,7 +17,7 @@ const BRANCO: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 const CINZINHA: sdl.SDL_Color = .{ .a = 255, .r = 215, .g = 215, .b = 225 };
 const CINZA: sdl.SDL_Color = .{ .a = 0, .r = 150, .g = 150, .b = 150 };
 const TAMANHO_FONTE_TITULO: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.045); // Aprox. 32 para 720p
-const TAMANHO_FONTE_ARTISTA: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.1); // Aprox. 32 para 720p
+const TAMANHO_FONTE_MUSICA: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.065); // Aprox. 32 para 720p
 const TAMANHO_FONTE_ALBUM: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.030); // Aprox. 32 para 720p
 const POSICAO_TITULO_Y: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.04); // Aprox. 30 para 720p
 const POSICAO_TITULO_X: c_int = @divTrunc(LARGURA_TELA, 2); // Aprox. 30 para 720p
@@ -144,12 +144,12 @@ pub const MusicScene = struct {
 
                 self.deinitMusicInfo();
 
-                self.musicText = Text.init(title_z.ptr, renderer, self.allocator, TAMANHO_FONTE_ARTISTA, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 160) catch |err| {
+                self.musicText = Text.init(title_z.ptr, renderer, self.allocator, TAMANHO_FONTE_MUSICA, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 160) catch |err| {
                     std.debug.print("Erro: {}\n", .{err});
                     return;
                 };
 
-                self.artistText = Text.init(artistname_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 90) catch |err| {
+                self.artistText = Text.init(artistname_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 100) catch |err| {
                     std.debug.print("Erro: {}\n", .{err});
                     self.musicText.?.deinit();
                     self.musicText = null;
