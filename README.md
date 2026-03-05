@@ -1,8 +1,7 @@
 # NatucciAA
 
-![Imagem natucciAA](https://i.imgur.com/NdxjKe5)
-
-![Musicas natucciAA](https://i.imgur.com/BFAB6CD)
+![Imagem natucciAA](https://i.imgur.com/NdxjKe5.png)
+![Musicas natucciAA](https://i.imgur.com/BFAB6CD.png)
 
 NatucciAA é um sistema de painel/infotainment automotivo desenvolvido inteiramente na linguagem **Zig**. O projeto utiliza a biblioteca **SDL2** para renderização gráfica e interface com o usuário, e integra-se com o sistema via **D-Bus** para gerenciamento de conexões e reprodução de mídia via **Bluetooth**.
 
