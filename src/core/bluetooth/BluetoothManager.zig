@@ -519,7 +519,7 @@ pub const BluetoothManager = struct {
     }
 
     pub fn unpauseMusic(self: *BluetoothManager) !void {
-        std.debug.print("Pausando música...\n", .{});
+        std.debug.print("Despausando música...\n", .{});
 
         var buf: [128]u8 = undefined;
         const path = try buildPathToMusic(
@@ -535,7 +535,7 @@ pub const BluetoothManager = struct {
             "org.bluez",
             path.ptr,
             "org.bluez.MediaControl1",
-            "Pause",
+            "Play",
         );
     }
 
@@ -679,6 +679,49 @@ pub const BluetoothManager = struct {
         }
 
         out.position = self.getPosition() catch 0;
+        out.playing = self.isPlaying();
+    }
+
+    pub fn isPlaying(self: *BluetoothManager) bool {
+        const player = self.player_path orelse return false;
+
+        const msg = c.dbus_message_new_method_call(
+            "org.bluez",
+            player,
+            "org.freedesktop.DBus.Properties",
+            "Get",
+        ) orelse return false;
+        defer c.dbus_message_unref(msg);
+
+        var msgIter: c.DBusMessageIter = undefined;
+        _ = c.dbus_message_iter_init_append(msg, &msgIter);
+        const iface: [*:0]const u8 = "org.bluez.MediaPlayer1";
+        const prop: [*:0]const u8 = "Status";
+        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&iface));
+        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&prop));
+
+        var bufErr: DbusError = undefined;
+        const dbusError: *c.DBusError = @ptrCast(&bufErr);
+        c.dbus_error_init(dbusError);
+        defer c.dbus_error_free(dbusError);
+
+        const reply = c.dbus_connection_send_with_reply_and_block(
+            self.dbus.conn, msg, -1, dbusError,
+        ) orelse return false;
+        defer c.dbus_message_unref(reply);
+
+        var iter: c.DBusMessageIter = undefined;
+        if (c.dbus_message_iter_init(reply, &iter) == 0) return false;
+        if (c.dbus_message_iter_get_arg_type(&iter) != c.DBUS_TYPE_VARIANT) return false;
+
+        var variant: c.DBusMessageIter = undefined;
+        c.dbus_message_iter_recurse(&iter, &variant);
+        if (c.dbus_message_iter_get_arg_type(&variant) != c.DBUS_TYPE_STRING) return false;
+
+        var status: [*c]const u8 = undefined;
+        c.dbus_message_iter_get_basic(&variant, @ptrCast(&status));
+
+        return std.mem.eql(u8, std.mem.span(status), "playing");
     }
 
     pub fn getPosition(self: *BluetoothManager) !u32 {

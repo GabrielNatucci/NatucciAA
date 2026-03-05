@@ -4,6 +4,7 @@ pub const TrackInfo = struct {
     title: [256]u8 = std.mem.zeroes([256]u8),
     artist: [256]u8 = std.mem.zeroes([256]u8),
     album: [256]u8 = std.mem.zeroes([256]u8),
+    playing: bool = true,
     duration: u32 = 0,
     track_number: u32 = 0,
     number_of_tracks: u32 = 0,
@@ -24,6 +25,10 @@ pub const TrackInfo = struct {
     pub fn getProgressPercent(self: *const TrackInfo) f32 {
         if (self.duration == 0) return 0;
         return @as(f32, @floatFromInt(self.position)) / @as(f32, @floatFromInt(self.duration)) * 100.0;
+    }
+
+    pub fn isPlaying(self: *const TrackInfo) bool {
+        return self.playing;
     }
 
     pub fn getPositionFormatted(self: *const TrackInfo, buf: []u8) [:0]u8 {
