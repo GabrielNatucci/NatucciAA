@@ -677,6 +677,50 @@ pub const BluetoothManager = struct {
 
             _ = c.dbus_message_iter_next(&array);
         }
+
+        out.position = self.getPosition() catch 0;
+    }
+
+    pub fn getPosition(self: *BluetoothManager) !u32 {
+        const player = self.player_path orelse return error.NoPlayer;
+
+        const msg = c.dbus_message_new_method_call(
+            "org.bluez",
+            player,
+            "org.freedesktop.DBus.Properties",
+            "Get",
+        ) orelse return error.DBusMessageNull;
+        defer c.dbus_message_unref(msg);
+
+        var msgIter: c.DBusMessageIter = undefined;
+        _ = c.dbus_message_iter_init_append(msg, &msgIter);
+        const iface: [*:0]const u8 = "org.bluez.MediaPlayer1";
+        const prop: [*:0]const u8 = "Position";
+        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&iface));
+        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&prop));
+
+        var bufErr: DbusError = undefined;
+        const dbusError: *c.DBusError = @ptrCast(&bufErr);
+        c.dbus_error_init(dbusError);
+        defer c.dbus_error_free(dbusError);
+
+        const reply = c.dbus_connection_send_with_reply_and_block(
+            self.dbus.conn, msg, -1, dbusError,
+        ) orelse return error.SemRespostaDoDbus;
+        defer c.dbus_message_unref(reply);
+
+        var iter: c.DBusMessageIter = undefined;
+        if (c.dbus_message_iter_init(reply, &iter) == 0) return error.EmptyReply;
+
+        // VARIANT contendo u32
+        if (c.dbus_message_iter_get_arg_type(&iter) != c.DBUS_TYPE_VARIANT) return error.UnexpectedType;
+        var variant: c.DBusMessageIter = undefined;
+        c.dbus_message_iter_recurse(&iter, &variant);
+
+        var position: u32 = undefined;
+        c.dbus_message_iter_get_basic(&variant, @ptrCast(&position));
+
+        return position;
     }
 };
 

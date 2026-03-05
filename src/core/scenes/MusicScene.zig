@@ -94,9 +94,12 @@ pub const MusicScene = struct {
             };
 
             if (self.trackInfo) |trackInfo| {
+                var buf: [32]u8 = undefined;
                 std.debug.print("\nTítulo: {s}\n", .{trackInfo.getTitle()});
                 std.debug.print("Artista: {s}\n", .{trackInfo.getArtist()});
                 std.debug.print("Duração: {}ms\n", .{trackInfo.duration});
+                std.debug.print("Progresso: {s}\n", .{trackInfo.getPositionFormatted(&buf),});
+                std.debug.print("Progresso: {}%\n", .{trackInfo.getProgressPercent()});
             }
         }
     }
