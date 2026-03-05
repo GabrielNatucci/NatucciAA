@@ -37,6 +37,7 @@ pub const MusicScene = struct {
     resumeMusicImg: Image,
     lastTimeSeconds: f32,
     musicText: ?Text = null,
+    artistText: ?Text = null,
     progress: ?Text = null,
     trackInfo: ?TrackInfo = null,
     allocator: std.mem.Allocator,
@@ -48,7 +49,7 @@ pub const MusicScene = struct {
         const nextImage = try Image.init("res/images/nextmusic.png", renderer, allocator, PROXIMA_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
         const prevImage = try Image.init("res/images/previousmusic.png", renderer, allocator, ANTERIOR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
         const pauseImage = try Image.init("res/images/pausemusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.4);
-        const resumeImage = try Image.init("res/images/playmusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.3);
+        const resumeImage = try Image.init("res/images/playmusic.png", renderer, allocator, PAUSAR_MUSICA_BOTAO, ALTURA_BOTOES_MUSICA, 0.4);
 
         return .{
             .goBackImg = backTexture,
@@ -93,9 +94,15 @@ pub const MusicScene = struct {
             t.deinit();
             self.musicText = null;
         }
+
         if (self.progress) |*p| {
             p.deinit();
             self.progress = null;
+        }
+
+        if (self.artistText) |*p| {
+            p.deinit();
+            self.artistText = null;
         }
     }
 
@@ -114,10 +121,12 @@ pub const MusicScene = struct {
 
             if (self.trackInfo) |trackInfo| {
                 var title_buf: [256]u8 = undefined;
+                var artist_buf: [256]u8 = undefined;
                 var progress_buf: [32]u8 = undefined;
 
                 const progress_z = trackInfo.getPositionFormatted(&progress_buf);
                 const title_z = std.fmt.bufPrintZ(&title_buf, "{s}", .{trackInfo.getTitle()}) catch return;
+                const artistname_z = std.fmt.bufPrintZ(&artist_buf, "{s}", .{trackInfo.getArtist()}) catch return;
 
                 self.deinitMusicInfo();
 
@@ -125,21 +134,31 @@ pub const MusicScene = struct {
                     std.debug.print("Erro: {}\n", .{err});
                     return;
                 };
-                self.progress = Text.init(progress_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 + 50) catch |err| {
+
+                self.artistText = Text.init(artistname_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2) catch |err| {
                     std.debug.print("Erro: {}\n", .{err});
                     self.musicText.?.deinit();
                     self.musicText = null;
                     return;
                 };
 
-                std.debug.print("\nTítulo: {s}\n", .{trackInfo.getTitle()});
-                std.debug.print("Artista: {s}\n", .{trackInfo.getArtist()});
-                std.debug.print("Duração: {}ms\n", .{trackInfo.duration});
-                std.debug.print("ta tocando?: {}\n", .{trackInfo.playing});
-                std.debug.print("Progresso: {s}\n", .{
-                    trackInfo.getPositionFormatted(&progress_buf),
-                });
-                std.debug.print("Progresso: {}%\n", .{trackInfo.getProgressPercent()});
+                self.progress = Text.init(progress_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 + 50) catch |err| {
+                    std.debug.print("Erro: {}\n", .{err});
+                    self.musicText.?.deinit();
+                    self.musicText = null;
+                    self.artistText.?.deinit();
+                    self.artistText = null;
+                    return;
+                };
+
+                // std.debug.print("\nTítulo: {s}\n", .{trackInfo.getTitle()});
+                // std.debug.print("Artista: {s}\n", .{trackInfo.getArtist()});
+                // std.debug.print("Duração: {}ms\n", .{trackInfo.duration});
+                // std.debug.print("ta tocando?: {}\n", .{trackInfo.playing});
+                // std.debug.print("Progresso: {s}\n", .{
+                //     trackInfo.getPositionFormatted(&progress_buf),
+                // });
+                // std.debug.print("Progresso: {}%\n", .{trackInfo.getProgressPercent()});
             }
         }
     }
@@ -166,6 +185,10 @@ pub const MusicScene = struct {
 
             if (self.progress) |progressText| {
                 progressText.render();
+            }
+
+            if (self.artistText) |artistText| {
+                artistText.render();
             }
         }
     }
