@@ -47,6 +47,13 @@ pub const MusicScene = struct {
     trackInfo: ?TrackInfo = null,
     allocator: std.mem.Allocator,
 
+    // Cava Visualizer
+    cavaProcess: ?*std.process.Child = null,
+    cavaThread: ?std.Thread = null,
+    cavaBars: [64]u8 = [_]u8{0} ** 64,
+    cavaMutex: std.Thread.Mutex = .{},
+    cavaRunning: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
+
     pub fn create(renderer: *sdl.SDL_Renderer, allocator: std.mem.Allocator, bluetooth: *bt.BluetoothManager) !MusicScene {
         std.debug.print("\nInicializando musicScene...\n", .{});
 
@@ -90,6 +97,7 @@ pub const MusicScene = struct {
         self.pauseMusicImg.deinit();
         self.goBackImg.deinit();
         self.resumeMusicImg.deinit();
+        self.stopCava();
 
         self.deinitMusicInfo();
     }
@@ -130,7 +138,7 @@ pub const MusicScene = struct {
             };
 
             if (self.trackInfo) |trackInfo| {
-                if (trackInfo.getAlbum().len == 0)  return;
+                if (trackInfo.getAlbum().len == 0) return;
 
                 var title_buf: [512]u8 = undefined;
                 var artist_buf: [100]u8 = undefined;
@@ -175,15 +183,6 @@ pub const MusicScene = struct {
                     self.progress = null;
                     return;
                 };
-
-                // std.debug.print("\nTítulo: {s}\n", .{trackInfo.getTitle()});
-                // std.debug.print("Artista: {s}\n", .{trackInfo.getArtist()});
-                // std.debug.print("Duração: {}ms\n", .{trackInfo.duration});
-                // std.debug.print("ta tocando?: {}\n", .{trackInfo.playing});
-                // std.debug.print("Progresso: {s}\n", .{
-                //     trackInfo.getPositionFormatted(&progress_buf),
-                // });
-                // std.debug.print("Progresso: {}%\n", .{trackInfo.getProgressPercent()});
             }
         }
     }
@@ -218,26 +217,64 @@ pub const MusicScene = struct {
                 albumText.render();
             }
 
+            const total_width = @divTrunc(@as(f32, LARGURA_TELA), 1.2);
+            const start_x: c_int = @divTrunc(LARGURA_TELA - @as(c_int, @intFromFloat(total_width)), 2);
+            const base_y: c_int = ALTURA_BOTOES_MUSICA_Y - 120;
+            const progress_h: c_int = @divTrunc(ALTURA_TELA, 55);
+
+            self.cavaMutex.lock();
+            const bars = self.cavaBars;
+            self.cavaMutex.unlock();
+
+            const num_bars = 64;
+            const bar_width_f: f32 = total_width / @as(f32, @floatFromInt(num_bars));
+
+            _ = sdl.SDL_SetRenderDrawBlendMode(renderer, sdl.SDL_BLENDMODE_BLEND);
+
+            for (bars, 0..) |val, i| {
+                if (val == 0) continue;
+
+                // A altura máxima que o visualizador pode crescer (ex: 80 pixels para cima)
+                const height_f = (@as(f32, @floatFromInt(val)) / 100.0) * 80.0;
+                const height = @as(c_int, @intFromFloat(height_f));
+
+                const bar_x = start_x + @as(c_int, @intFromFloat(@as(f32, @floatFromInt(i)) * bar_width_f));
+                const bar_w = @as(c_int, @intFromFloat(bar_width_f)) - 1; // -1 para um leve espaçamento
+
+                const bar_rect = sdl.SDL_Rect{
+                    .x = bar_x,
+                    // Adicionamos a altura da barra base para que as barrinhas fiquem "coladas" na linha
+                    .y = base_y - height + progress_h,
+                    .w = if (bar_w > 0) bar_w else 1,
+                    .h = height,
+                };
+
+                // Cor branca com opacidade reduzida
+                _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, 60);
+                _ = sdl.SDL_RenderFillRect(renderer, &bar_rect);
+            }
+
+            _ = sdl.SDL_SetRenderDrawBlendMode(renderer, sdl.SDL_BLENDMODE_NONE);
+
+            // --- Barra de Progresso Background ---
             _ = sdl.SDL_SetRenderDrawColor(renderer, CINZA.r, CINZA.g, CINZA.b, CINZA.a);
             var linhaDuracaoRect: sdl.SDL_Rect = .{
-                .x = @divTrunc(LARGURA_TELA - @divTrunc(@as(f32, LARGURA_TELA), 1.2), 2),
-                .y = ALTURA_BOTOES_MUSICA_Y - 120,
-                .w = @divTrunc(@as(f32, LARGURA_TELA), 1.2),
-                .h = ALTURA_TELA / 55,
+                .x = start_x,
+                .y = base_y,
+                .w = @as(c_int, @intFromFloat(total_width)),
+                .h = progress_h,
             };
             _ = sdl.SDL_RenderDrawRect(renderer, &linhaDuracaoRect);
             _ = sdl.SDL_RenderFillRect(renderer, &linhaDuracaoRect);
 
+            // --- Barra de Progresso Atual ---
             _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, BRANCO.a);
             var linhaDuracaoProgressoRect: sdl.SDL_Rect = .{
-                .x = @divTrunc(LARGURA_TELA - @divTrunc(@as(f32, LARGURA_TELA), 1.2), 2),
-                .y = ALTURA_BOTOES_MUSICA_Y - 120,
-                .w = @intFromFloat(@divTrunc(@as(f32, LARGURA_TELA), 1.2) * (trackInfo.getProgressPercent() * 0.01)),
-                .h = ALTURA_TELA / 55,
+                .x = start_x,
+                .y = base_y,
+                .w = @intFromFloat(total_width * (trackInfo.getProgressPercent() * 0.01)),
+                .h = progress_h,
             };
-            // std.debug.print("Progresso %: {d}\n", .{(trackInfo.getProgressPercent()*0.01)});
-            // std.debug.print("Progresso teste: {d}\n", .{@divTrunc(@as(f32, LARGURA_TELA), 1.2) });
-            // std.debug.print("Progresso largura: {d}\n", .{@divTrunc(@as(f32, LARGURA_TELA), 1.2) * (trackInfo.getProgressPercent()/10)});
 
             _ = sdl.SDL_RenderDrawRect(renderer, &linhaDuracaoProgressoRect);
             _ = sdl.SDL_RenderFillRect(renderer, &linhaDuracaoProgressoRect);
@@ -284,14 +321,107 @@ pub const MusicScene = struct {
     }
 
     pub fn outOfFocus(self: *MusicScene) void {
-        _ = self;
+        // _ = self;
+        self.stopCava();
     }
 
     pub fn inOfFocus(self: *MusicScene) void {
         self.lastTimeSeconds = 5.0;
         self.btManager.getMusicPlayer() catch |err| {
-            std.debug.print("Erro ao pausar música: {}\n", .{err});
+            std.debug.print("Erro ao obter music player: {}\n", .{err});
             return;
         };
+
+        self.startCava() catch |err| {
+            std.debug.print("Não foi possível iniciar o cava: {}\n", .{err});
+        };
+    }
+
+    pub fn startCava(self: *MusicScene) !void {
+        const config =
+            \\[general]
+            \\bars = 64
+            \\[output]
+            \\method = raw
+            \\raw_target = /dev/stdout
+            \\data_format = ascii
+            \\ascii_max_range = 100
+            \\
+        ;
+        var file = try std.fs.cwd().createFile("/tmp/cava_natucci.conf", .{});
+        defer file.close();
+        try file.writeAll(config);
+
+        const argv = &[_][]const u8{ "cava", "-p", "/tmp/cava_natucci.conf" };
+        var child = try self.allocator.create(std.process.Child);
+        child.* = std.process.Child.init(argv, self.allocator);
+        child.stdout_behavior = .Pipe;
+        try child.spawn();
+
+        self.cavaProcess = child;
+        self.cavaRunning.store(true, .seq_cst);
+        self.cavaThread = try std.Thread.spawn(.{}, cavaReaderThread, .{self});
+    }
+
+    pub fn stopCava(self: *MusicScene) void {
+        if (self.cavaRunning.load(.seq_cst)) {
+            self.cavaRunning.store(false, .seq_cst);
+            if (self.cavaProcess) |process| {
+                _ = process.kill() catch {};
+
+                if (self.cavaThread) |*thread| {
+                    thread.join();
+                    self.cavaThread = null;
+                }
+
+                _ = process.wait() catch {};
+                self.allocator.destroy(process);
+                self.cavaProcess = null;
+            }
+
+            // Reseta as barras para 0
+            self.cavaMutex.lock();
+            self.cavaBars = [_]u8{0} ** 64;
+            self.cavaMutex.unlock();
+        }
     }
 };
+
+fn cavaReaderThread(self: *MusicScene) void {
+    const stdout = self.cavaProcess.?.stdout orelse return;
+    var buf: [4096]u8 = undefined;
+    var buf_len: usize = 0;
+
+    while (self.cavaRunning.load(.seq_cst)) {
+        if (buf_len >= buf.len) buf_len = 0;
+
+        const bytes_read = stdout.read(buf[buf_len..]) catch 0;
+        if (bytes_read == 0) break; // EOF ou processo morto
+        buf_len += bytes_read;
+
+        while (true) {
+            if (std.mem.indexOfScalar(u8, buf[0..buf_len], '\n')) |idx| {
+                const line = buf[0..idx];
+                var it = std.mem.splitScalar(u8, line, ';');
+                var i: usize = 0;
+
+                self.cavaMutex.lock();
+                while (it.next()) |val_str| {
+                    if (val_str.len == 0) continue;
+                    if (i >= 64) break;
+                    if (std.fmt.parseInt(u8, val_str, 10)) |val| {
+                        self.cavaBars[i] = val;
+                        i += 1;
+                    } else |_| {}
+                }
+                self.cavaMutex.unlock();
+
+                const remaining = buf_len - (idx + 1);
+                std.mem.copyForwards(u8, buf[0..remaining], buf[idx + 1 .. buf_len]);
+                buf_len = remaining;
+            } else {
+                break; // Precisa ler mais para completar uma linha
+            }
+        }
+    }
+}
