@@ -20,6 +20,16 @@ pub fn build(b: *std.Build) void {
     exe.linkSystemLibrary("dbus-1");
     exe.linkLibC();
 
+    // AASDK Integration
+    exe.addCSourceFile(.{
+        .file = b.path("src/aasdk/aasdk_wrapper.cpp"),
+        .flags = &[_][]const u8{"-std=c++14"}, // ajuste a versão do c++ se necessário (14 ou 17)
+    });
+    
+    exe.linkSystemLibrary("aasdk");
+    exe.linkSystemLibrary("aap_protobuf");
+    exe.linkLibCpp();
+
     b.installArtifact(exe);
 
     const run_step = b.step("run", "Run the app");

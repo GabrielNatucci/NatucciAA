@@ -11,6 +11,7 @@ const BluetoothScene = @import("core/scenes/BluetoothScene.zig").BluetoothScene;
 const Scene = @import("core/scenes/Scene.zig").Scene;
 const bt = @import("core/bluetooth/BluetoothManager.zig");
 const dbus = @import("core/dbus/dbus.zig");
+const aasdk = @import("aasdk/aasdk.zig");
 
 var renderer: ?*sdl.SDL_Renderer = null;
 var window: ?*sdl.SDL_Window = null;
@@ -24,6 +25,7 @@ pub const WIDTH: c_int = 1280;
 var sceneManager: ?SceneManager = null;
 var dbusImpl: ?dbus.DBus = null;
 var btManager: ?bt.BluetoothManager = null;
+var aaManager: ?aasdk.AASdk = null;
 
 pub fn main() !void {
     const cwd = try std.fs.cwd().realpathAlloc(allocator.allocator(), ".");
@@ -65,6 +67,16 @@ pub fn initSomeStuff() u2 {
 
     btManager = bt.BluetoothManager.init(&dbusImpl.?, allocator.allocator());
 
+    aaManager = aasdk.AASdk.init() catch |err| {
+        std.debug.print("Erro ao iniciar AASDK: {}\n", .{err});
+        return 1;
+    };
+    if (aaManager) |*aa| {
+        aa.start() catch |err| {
+            std.debug.print("Erro ao fazer start no AASDK: {}\n", .{err});
+        };
+    }
+
     sceneManager = SceneManager.init(renderer.?, &btManager.?, allocator.allocator()) catch |err| {
         std.debug.print("Erro ao iniciar o SceneManager: {}", .{err});
         return 1;
@@ -77,6 +89,10 @@ pub fn initSomeStuff() u2 {
 }
 
 pub fn quitEmAll() void {
+    if (aaManager) |*aa| {
+        aa.stop();
+        aa.deinit();
+    }
     if (btManager) |*btmn| btmn.deinit();
     if (sceneManager) |*sm| sm.deinit();
 
