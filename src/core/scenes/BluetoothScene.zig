@@ -153,7 +153,7 @@ pub const BluetoothScene = struct {
                     const yPos = POSICAO_INICIAL_LISTA_Y + @as(c_int, @intCast(i)) * ESPACAMENTO_VERTICAL_DISPOSITIVO;
 
                     const textX = POSICAO_INICIAL_LISTA_X + @divTrunc(LARGURA_CAIXA_DISPOSITIVO, 2);
-                    const textName: [:0] u8 = self.allocator.dupeZ(u8, value.name.items) catch |err| {
+                    const textName: [:0]u8 = self.allocator.dupeZ(u8, value.name.items) catch |err| {
                         std.debug.print("Erro ao converter nome do dispositivo: {}", .{err});
                         return;
                     };
@@ -226,7 +226,7 @@ pub const BluetoothScene = struct {
         const deviceX: c_int = BORDA_MODAL_X + @divTrunc(LARGURA_MODAL, 2);
         const deviceY: c_int = BORDA_MODAL_Y + MODAL_MARGEM_Y;
 
-        const deviceName: [:0] const u8 = self.allocator.dupeZ(u8, self.selectedDevice.?.name.items) catch |err| {
+        const deviceName: [:0]const u8 = self.allocator.dupeZ(u8, self.selectedDevice.?.name.items) catch |err| {
             std.debug.print("Erro ao converter nome do dispositivo: {}", .{err});
             return;
         };

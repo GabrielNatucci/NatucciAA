@@ -138,7 +138,7 @@ pub const MusicScene = struct {
             };
 
             if (self.trackInfo) |trackInfo| {
-                const title_z = self.allocator.dupeZ(u8,trackInfo.getTitle()) catch |err| {
+                const title_z = self.allocator.dupeZ(u8, trackInfo.getTitle()) catch |err| {
                     std.debug.print("Erro ao converter título: {}", .{err});
                     return;
                 };
