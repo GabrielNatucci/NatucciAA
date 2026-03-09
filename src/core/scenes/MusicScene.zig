@@ -169,8 +169,6 @@ pub const MusicScene = struct {
                     std.debug.print("Erro: {}\n", .{err});
                     return;
                 };
-
-                std.debug.print("Updating trackinfo terminou\n", .{});
             }
         }
     }
@@ -280,7 +278,6 @@ pub const MusicScene = struct {
                 }
 
                 if (self.trackInfo) |trackInfo| {
-
                     std.debug.print("\nTítulo: {s}\n", .{trackInfo.getTitle()});
                     std.debug.print("Artista: {s}\n", .{trackInfo.getArtist()});
                     std.debug.print("Duração: {}ms\n", .{trackInfo.duration});
@@ -331,6 +328,7 @@ pub const MusicScene = struct {
             \\bars = 64
             \\[output]
             \\method = raw
+            \\channels = mono
             \\raw_target = /dev/stdout
             \\data_format = ascii
             \\ascii_max_range = 100
