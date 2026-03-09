@@ -229,20 +229,17 @@ pub const MusicScene = struct {
 
                 const bar_rect = sdl.SDL_Rect{
                     .x = bar_x,
-                    // Adicionamos a altura da barra base para que as barrinhas fiquem "coladas" na linha
                     .y = base_y - height + progress_h,
                     .w = if (bar_w > 0) bar_w else 1,
                     .h = height,
                 };
 
-                // Cor branca com opacidade reduzida
                 _ = sdl.SDL_SetRenderDrawColor(renderer, BRANCO.r, BRANCO.g, BRANCO.b, 60);
                 _ = sdl.SDL_RenderFillRect(renderer, &bar_rect);
             }
 
             _ = sdl.SDL_SetRenderDrawBlendMode(renderer, sdl.SDL_BLENDMODE_NONE);
 
-            // --- Barra de Progresso Background ---
             _ = sdl.SDL_SetRenderDrawColor(renderer, CINZA.r, CINZA.g, CINZA.b, CINZA.a);
             var linhaDuracaoRect: sdl.SDL_Rect = .{
                 .x = start_x,
