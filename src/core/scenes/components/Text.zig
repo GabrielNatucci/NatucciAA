@@ -5,7 +5,6 @@ const ArrayList = std.array_list.Managed;
 pub const Text = struct {
     allocator: std.mem.Allocator,
     texture: *sdl.SDL_Texture,
-    text: ArrayList(u8),
     x: c_int,
     y: c_int,
     width: c_int,
@@ -13,7 +12,7 @@ pub const Text = struct {
     renderer: *sdl.SDL_Renderer,
 
     pub fn init(
-        text: [*c]const u8,
+        text: [:0]const u8,
         renderer: *sdl.SDL_Renderer,
         allocator: std.mem.Allocator,
         fontSize: c_int,
@@ -21,18 +20,13 @@ pub const Text = struct {
         x: c_int,
         y: c_int,
     ) !Text {
+        if (text.len == 0) return error.TextoNaoPodeSerVazio;
+
         const fonte = sdl.TTF_OpenFont("res/font/Roboto-VariableFont_wdth,wght.ttf", fontSize);
         if (fonte == null) return error.FonteNaoFoiCarregada;
         defer sdl.TTF_CloseFont(fonte);
 
-        var textTemp = ArrayList(u8).init(allocator);
-        errdefer textTemp.deinit();
-
-        const slice = std.mem.span(text);
-        try textTemp.appendSlice(slice);
-        try textTemp.append(0);
-
-        const textSurface = sdl.TTF_RenderText_Blended(fonte, textTemp.items.ptr, color);
+        const textSurface = sdl.TTF_RenderText_Blended(fonte, text, color);
         if (textSurface == null) {
             std.debug.print("Erro ao criar surface de texto: {s}", .{sdl.SDL_GetError()});
             return error.surfaceNaoCriada;
@@ -55,7 +49,6 @@ pub const Text = struct {
             .allocator = allocator,
             .width = width,
             .height = height,
-            .text = textTemp,
             .renderer = renderer,
             .texture = textTexture.?,
             .x = xtext,
@@ -64,7 +57,6 @@ pub const Text = struct {
     }
 
     pub fn deinit(self: Text) void {
-        self.text.deinit();
         sdl.SDL_DestroyTexture(self.texture);
     }
 

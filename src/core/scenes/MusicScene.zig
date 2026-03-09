@@ -138,51 +138,39 @@ pub const MusicScene = struct {
             };
 
             if (self.trackInfo) |trackInfo| {
-                if (trackInfo.getAlbum().len == 0) return;
+                const title_z = self.allocator.dupeZ(u8,trackInfo.getTitle()) catch |err| {
+                    std.debug.print("Erro ao converter título: {}", .{err});
+                    return;
+                };
+                defer self.allocator.free(title_z);
 
-                var title_buf: [512]u8 = undefined;
-                var artist_buf: [100]u8 = undefined;
-                var album_buf: [100]u8 = undefined;
+                const artist_z = self.allocator.dupeZ(u8, trackInfo.getArtist()) catch |err| {
+                    std.debug.print("Erro ao converter artista: {}", .{err});
+                    return;
+                };
+                defer self.allocator.free(artist_z);
+
+                const album_z = self.allocator.dupeZ(u8, trackInfo.getAlbum()) catch |err| {
+                    std.debug.print("Erro ao converter álbum: {}", .{err});
+                    return;
+                };
+                defer self.allocator.free(album_z);
+
                 var progress_buf: [32]u8 = undefined;
-
                 const progress_z = trackInfo.getPositionFormatted(&progress_buf);
-                const title_z = std.fmt.bufPrintZ(&title_buf, "{s}", .{trackInfo.getTitle()}) catch return;
-                const artistname_z = std.fmt.bufPrintZ(&artist_buf, "{s}", .{trackInfo.getArtist()}) catch return;
-                const album_z = std.fmt.bufPrintZ(&album_buf, "{s}", .{trackInfo.getAlbum()}) catch return;
 
                 self.deinitMusicInfo();
 
-                self.musicText = Text.init(title_z.ptr, renderer, self.allocator, TAMANHO_FONTE_MUSICA, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 160) catch |err| {
+                self.musicText = SceneUtil.createText(title_z, renderer, self.allocator, TAMANHO_FONTE_MUSICA, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 160);
+                self.artistText = SceneUtil.createText(artist_z, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 100);
+                self.albumText = SceneUtil.createText(album_z, renderer, self.allocator, TAMANHO_FONTE_ALBUM, CINZINHA, LARGURA_TELA / 2, ALTURA_TELA / 2 - 50);
+
+                self.progress = Text.init(progress_z, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_BOTOES_MUSICA_Y - 160) catch |err| {
                     std.debug.print("Erro: {}\n", .{err});
                     return;
                 };
 
-                self.artistText = Text.init(artistname_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_TELA / 2 - 100) catch |err| {
-                    std.debug.print("Erro: {}\n", .{err});
-                    self.musicText.?.deinit();
-                    self.musicText = null;
-                    return;
-                };
-
-                self.progress = Text.init(progress_z.ptr, renderer, self.allocator, TAMANHO_FONTE_TITULO, BRANCO, LARGURA_TELA / 2, ALTURA_BOTOES_MUSICA_Y - 160) catch |err| {
-                    std.debug.print("Erro: {}\n", .{err});
-                    self.musicText.?.deinit();
-                    self.musicText = null;
-                    self.artistText.?.deinit();
-                    self.artistText = null;
-                    return;
-                };
-
-                self.albumText = Text.init(album_z.ptr, renderer, self.allocator, TAMANHO_FONTE_ALBUM, CINZINHA, LARGURA_TELA / 2, ALTURA_TELA / 2 - 50) catch |err| {
-                    std.debug.print("Erro: {}\n", .{err});
-                    self.musicText.?.deinit();
-                    self.musicText = null;
-                    self.artistText.?.deinit();
-                    self.artistText = null;
-                    self.progress.?.deinit();
-                    self.progress = null;
-                    return;
-                };
+                std.debug.print("Updating trackinfo terminou\n", .{});
             }
         }
     }

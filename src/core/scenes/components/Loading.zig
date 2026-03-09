@@ -3,7 +3,7 @@ const sdl = @import("../../../sdlImport/Sdl.zig").sdl;
 const ArrayList = std.array_list.Managed;
 
 pub const Loading = struct {
-    const ROTATION_SPEED: f64 = 1.5; // Ajuste este valor para mudar a velocidade
+    const ROTATION_SPEED: f64 = 1.5;
 
     texture: *sdl.SDL_Texture,
     x: c_int,

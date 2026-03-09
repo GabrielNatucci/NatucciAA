@@ -9,6 +9,7 @@ pub fn main() !void {
         \\[general]
         \\bars = 64
         \\[output]
+        \\channels = mono
         \\method = raw
         \\raw_target = /dev/stdout
         \\data_format = ascii
