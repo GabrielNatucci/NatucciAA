@@ -220,8 +220,9 @@ pub const MusicScene = struct {
             for (bars, 0..) |val, i| {
                 if (val == 0) continue;
 
-                // A altura máxima que o visualizador pode crescer (ex: 80 pixels para cima)
-                const height_f = (@as(f32, @floatFromInt(val)) / 100.0) * 80.0;
+                // A altura máxima que o visualizador pode crescer (ex: 100 pixels para cima)
+                // isso aqui vai ser refatorado ainda... CALMA!
+                const height_f = (@as(f32, @floatFromInt(val)) / 100.0) * 100.0;
                 const height = @as(c_int, @intFromFloat(height_f));
 
                 const bar_x = start_x + @as(c_int, @intFromFloat(@as(f32, @floatFromInt(i)) * bar_width_f));
