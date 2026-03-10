@@ -149,7 +149,6 @@ pub const BluetoothScene = struct {
                 self.devicesText = ArrayList(Text).init(self.allocator);
 
                 for (self.btManager.devices.items, 0..) |value, i| {
-                    // self.btManager.printDeviceInfo(&value); // borked
                     const yPos = POSICAO_INICIAL_LISTA_Y + @as(c_int, @intCast(i)) * ESPACAMENTO_VERTICAL_DISPOSITIVO;
 
                     const textX = POSICAO_INICIAL_LISTA_X + @divTrunc(LARGURA_CAIXA_DISPOSITIVO, 2);

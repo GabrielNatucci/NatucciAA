@@ -422,17 +422,14 @@ pub const BluetoothManager = struct {
         var args: c.DBusMessageIter = undefined;
         c.dbus_message_iter_init_append(msg, &args);
 
-        // Path do agente
         const agent_path = "/org/bluez/auto_agent";
         var path_ptr: [*c]const u8 = agent_path.ptr;
         _ = c.dbus_message_iter_append_basic(&args, c.DBUS_TYPE_OBJECT_PATH, @ptrCast(&path_ptr));
 
-        // Capability: NoInputNoOutput = aceita tudo
         const capability = "NoInputNoOutput";
         var cap_ptr: [*c]const u8 = capability.ptr;
         _ = c.dbus_message_iter_append_basic(&args, c.DBUS_TYPE_STRING, @ptrCast(&cap_ptr));
 
-        // Enviar
         var err_buf: [64]u8 align(@alignOf(c.DBusError)) = undefined;
         const err: *c.DBusError = @ptrCast(&err_buf);
         c.dbus_error_init(err);
@@ -480,7 +477,7 @@ pub const BluetoothManager = struct {
             _ = c.dbus_message_unref(reply2);
         }
 
-        std.debug.print("✅ Agente auto-accept registrado!\n", .{});
+        std.debug.print("Agente auto-accept registrado!\n", .{});
     }
 
     fn buildPathToMusic(
