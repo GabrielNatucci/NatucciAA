@@ -6,6 +6,7 @@ const c = @import("../../../../sdlImport/Sdl.zig").dbus;
 const Device = @import("../structs/Device.zig").Device;
 
 const MAC_LEN = 17;
+
 pub fn startDiscovery(self: *BluetoothManager) !void {
     if (self.discovery == false) {
         std.debug.print("Iniciando descoberta...\n", .{});
@@ -126,7 +127,6 @@ fn parseDeviceProperties(self: *BluetoothManager, iter: *c.DBusMessageIter) !?De
         _ = c.dbus_message_iter_next(&prop_array);
     }
 
-    // MUDANÇA CRÍTICA: aceita dispositivos mesmo sem RSSI, desde que tenha nome e endereço
     if (name != null and address != null) {
         var nomeCopy = ArrayList(u8).init(self.allocator);
         try nomeCopy.appendSlice(name.?);

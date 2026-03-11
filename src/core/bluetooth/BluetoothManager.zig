@@ -4,17 +4,15 @@ const ArrayList = std.array_list.Managed;
 const c = @import("../../sdlImport/Sdl.zig").dbus;
 const DbusError = @import("../../sdlImport/Sdl.zig").DBusError;
 const DBus = @import("../dbus/dbus.zig").DBus;
-const Device = @import("./manager/structs/Device.zig").Device;
-const TrackInfo = @import("./Music/TrackInfo.zig").TrackInfo;
 const Connection = @import("./manager/connection/Connection.zig");
 const Discovery = @import("./manager/discovery/Discovery.zig");
+const MusicController = @import("./manager/musiccontroller/MusicController.zig");
+const Device = @import("./manager/structs/Device.zig").Device;
+const TrackInfo = @import("./manager/structs/TrackInfo.zig").TrackInfo;
 
 const MAC_LEN = 17;
 const MacAddress = [MAC_LEN]u8;
 
-// ============================================================================
-// BluetoothManager - Gerenciador específico de Bluetooth
-// ============================================================================
 pub const BluetoothManager = struct {
     dbus: *DBus,
     discovery: bool,
@@ -47,97 +45,6 @@ pub const BluetoothManager = struct {
         return manager;
     }
 
-    pub fn printDeviceInfo(self: *BluetoothManager, device: *const Device) void {
-        // borked
-        _ = self;
-        std.debug.print("\nDispositivo: {s}\n", .{device.name.items});
-        std.debug.print("  MAC: {s}\n", .{device.address.items});
-        std.debug.print("  RSSI: {d} dBm\n", .{device.rssi});
-        std.debug.print("  Conectado: {s}\n", .{if (device.connected) "SIM" else "NÃO"});
-        std.debug.print("  Pareado: {s}\n", .{if (device.paired) "SIM" else "NÃO"});
-        std.debug.print("  Confiável: {s}\n", .{if (device.trusted) "SIM" else "NÃO"});
-        std.debug.print("  Bloqueado: {s}\n", .{if (device.blocked) "SIM" else "NÃO"});
-    }
-
-    pub fn startDiscovery(self: *BluetoothManager) !void {
-        try Discovery.startDiscovery(self);
-    }
-
-    pub fn stopDiscovery(self: *BluetoothManager) !void {
-        try Discovery.stopDiscovery(self);
-    }
-
-    pub fn getMusicPlayer(self: *BluetoothManager) !void {
-        std.debug.print("Pegando player...\n", .{});
-
-        var buf: [128]u8 = undefined;
-        const path = try buildPathToMusic(
-            &buf,
-            std.mem.sliceTo(self.adapter_path, 0),
-            if (self.connectedAddress) |addr| addr[0..] else null,
-        );
-        buf[path.len] = 0;
-
-        std.debug.print("caminho: {s}\n", .{path});
-        const msg = c.dbus_message_new_method_call(
-            "org.bluez",
-            path.ptr,
-            "org.freedesktop.DBus.Properties",
-            "Get",
-        ) orelse return error.DBusMessageNull;
-
-        var msgIter: c.DBusMessageIter = undefined;
-        _ = c.dbus_message_iter_init_append(msg, &msgIter);
-
-        const arg0: [*:0]const u8 = "org.bluez.MediaControl1";
-        const arg1: [*:0]const u8 = "Player";
-
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&arg0));
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&arg1));
-
-        var bufErr: DbusError = undefined;
-        const dbusError: *c.DBusError = @ptrCast(&bufErr);
-        c.dbus_error_init(dbusError);
-        defer c.dbus_error_free(dbusError);
-
-        const reply = c.dbus_connection_send_with_reply_and_block(self.dbus.conn, msg, -1, dbusError);
-
-        if (reply == null) {
-            return error.SemRespostaDoDbus;
-        }
-
-        var iter: c.DBusMessageIter = undefined;
-
-        if (c.dbus_message_iter_init(reply, &iter) == 0) {
-            return error.NaoFoiPossivelRecuperarOPlayer;
-        }
-
-        if (c.dbus_message_iter_get_arg_type(&iter) == c.DBUS_TYPE_VARIANT) {
-            std.debug.print("c.dbus_message_iter_get_arg_type\n", .{});
-            var variant: c.DBusMessageIter = undefined;
-            c.dbus_message_iter_recurse(&iter, &variant);
-
-            if (c.dbus_message_iter_get_arg_type(&variant) == c.DBUS_TYPE_OBJECT_PATH) {
-                var player_path: [*c]const u8 = undefined;
-                c.dbus_message_iter_get_basic(&variant, @ptrCast(&player_path));
-
-                // Copia para o buffer próprio (não confiar na memória do dbus após unref)
-                const span = std.mem.span(player_path);
-                @memcpy(self.player_path_buf[0..span.len], span);
-                self.player_path_buf[span.len] = 0;
-                self.player_path = self.player_path_buf[0..span.len :0];
-
-                std.debug.print("Player path salvo: {s}\n", .{self.player_path.?});
-            }
-        }
-
-        c.dbus_message_unref(msg);
-    }
-
-    pub fn listDevices(self: *BluetoothManager) !void {
-        try Discovery.listDevices(self);
-    }
-
     pub fn deinit(self: BluetoothManager) void {
         self.deinitDevices();
     }
@@ -148,61 +55,6 @@ pub const BluetoothManager = struct {
         }
 
         self.devices.deinit();
-    }
-
-
-    pub fn setDeviceProperty(self: *BluetoothManager, device_path: []const u8, property: []const u8, value: bool) !void {
-        const msg = c.dbus_message_new_method_call(
-            "org.bluez",
-            device_path.ptr,
-            "org.freedesktop.DBus.Properties",
-            "Set",
-        );
-        if (msg == null) return error.OutOfMemory;
-        defer _ = c.dbus_message_unref(msg);
-
-        // Adicionar argumentos: interface, property name, e variant
-        var args: c.DBusMessageIter = undefined;
-        c.dbus_message_iter_init_append(msg, &args);
-
-        // Adicionar interface name
-        const interface = "org.bluez.Device1";
-        var interface_ptr: [*c]const u8 = interface.ptr;
-        _ = c.dbus_message_iter_append_basic(&args, c.DBUS_TYPE_STRING, @ptrCast(&interface_ptr));
-
-        // Adicionar property name
-        var property_ptr: [*c]const u8 = property.ptr;
-        _ = c.dbus_message_iter_append_basic(&args, c.DBUS_TYPE_STRING, @ptrCast(&property_ptr));
-
-        // Adicionar variant com boolean
-        var variant: c.DBusMessageIter = undefined;
-        const variant_sig = "b";
-        _ = c.dbus_message_iter_open_container(&args, c.DBUS_TYPE_VARIANT, variant_sig.ptr, &variant);
-
-        const bool_value: u32 = if (value) 1 else 0;
-        _ = c.dbus_message_iter_append_basic(&variant, c.DBUS_TYPE_BOOLEAN, @ptrCast(&bool_value));
-        _ = c.dbus_message_iter_close_container(&args, &variant);
-
-        // Enviar mensagem
-        var err_buf: [64]u8 align(@alignOf(c.DBusError)) = undefined;
-        const err: *c.DBusError = @ptrCast(&err_buf);
-        c.dbus_error_init(err);
-        defer c.dbus_error_free(err);
-
-        const reply = c.dbus_connection_send_with_reply_and_block(
-            self.dbus.conn,
-            msg,
-            -1,
-            err,
-        );
-
-        if (c.dbus_error_is_set(err) != 0) {
-            return error.DBusCallFailed;
-        }
-
-        if (reply != null) {
-            _ = c.dbus_message_unref(reply);
-        }
     }
 
     pub fn setupSimpleAgent(self: *BluetoothManager) !void {
@@ -276,6 +128,18 @@ pub const BluetoothManager = struct {
         std.debug.print("Agente auto-accept registrado!\n", .{});
     }
 
+    pub fn startDiscovery(self: *BluetoothManager) !void {
+        try Discovery.startDiscovery(self);
+    }
+
+    pub fn stopDiscovery(self: *BluetoothManager) !void {
+        try Discovery.stopDiscovery(self);
+    }
+
+    pub fn listDevices(self: *BluetoothManager) !void {
+        try Discovery.listDevices(self);
+    }
+
     pub fn connectDeviceAsync(self: *BluetoothManager, device: *const Device) !void {
         try Connection.connectDeviceAsync(self, device);
     }
@@ -300,286 +164,35 @@ pub const BluetoothManager = struct {
         try Connection.trustDevice(self, device, trusted);
     }
 
-    fn buildPathToMusic(
-        buffer: []u8,
-        adapter_path: []const u8,
-        connected_address: ?[]const u8, // string "D8:68:A0:77:CF:1D"
-    ) ![]const u8 {
-        const addr_str = connected_address orelse return error.NoAddress;
-
-        var mac_buf: [17]u8 = undefined;
-        @memcpy(&mac_buf, addr_str[0..17]);
-        std.mem.replaceScalar(u8, &mac_buf, ':', '_');
-
-        return try std.fmt.bufPrint(buffer, "{s}/dev_{s}", .{ adapter_path, mac_buf });
-    }
-
     pub fn pauseMusic(self: *BluetoothManager) !void {
-        std.debug.print("Pausando música...\n", .{});
-
-        var buf: [128]u8 = undefined;
-        const path = try buildPathToMusic(
-            &buf,
-            std.mem.sliceTo(self.adapter_path, 0),
-            if (self.connectedAddress) |addr| addr[0..] else null,
-        );
-        buf[path.len] = 0;
-
-        std.debug.print("path: '{s}'\n", .{path});
-
-        try self.dbus.callMethod(
-            "org.bluez",
-            path.ptr,
-            "org.bluez.MediaControl1",
-            "Pause",
-        );
+        try MusicController.pauseMusic(self);
     }
 
     pub fn unpauseMusic(self: *BluetoothManager) !void {
-        std.debug.print("Despausando música...\n", .{});
-
-        var buf: [128]u8 = undefined;
-        const path = try buildPathToMusic(
-            &buf,
-            std.mem.sliceTo(self.adapter_path, 0),
-            if (self.connectedAddress) |addr| addr[0..] else null,
-        );
-        buf[path.len] = 0;
-
-        std.debug.print("path: '{s}'\n", .{path});
-
-        try self.dbus.callMethod(
-            "org.bluez",
-            path.ptr,
-            "org.bluez.MediaControl1",
-            "Play",
-        );
+        try MusicController.unpauseMusic(self);
     }
 
     pub fn nextMusic(self: *BluetoothManager) !void {
-        std.debug.print("Próxima música...\n", .{});
-
-        var buf: [128]u8 = undefined;
-        const path = try buildPathToMusic(
-            &buf,
-            std.mem.sliceTo(self.adapter_path, 0),
-            if (self.connectedAddress) |addr| addr[0..] else null,
-        );
-        buf[path.len] = 0;
-
-        std.debug.print("path: '{s}'\n", .{path});
-
-        try self.dbus.callMethod(
-            "org.bluez",
-            path.ptr,
-            "org.bluez.MediaControl1",
-            "Next",
-        );
+        try MusicController.nextMusic(self);
     }
 
     pub fn previousMusic(self: *BluetoothManager) !void {
-        std.debug.print("Música anterior...\n", .{});
-
-        var buf: [128]u8 = undefined;
-        const path = try buildPathToMusic(
-            &buf,
-            std.mem.sliceTo(self.adapter_path, 0),
-            if (self.connectedAddress) |addr| addr[0..] else null,
-        );
-        buf[path.len] = 0;
-
-        std.debug.print("path: '{s}'\n", .{path});
-
-        try self.dbus.callMethod(
-            "org.bluez",
-            path.ptr,
-            "org.bluez.MediaControl1",
-            "Previous",
-        );
+        try MusicController.previousMusic(self);
     }
 
     pub fn getTrackInfo(self: *BluetoothManager, out: *TrackInfo) !void {
-        const player = self.player_path orelse return error.NoPlayer;
-
-        const msg = c.dbus_message_new_method_call(
-            "org.bluez",
-            player,
-            "org.freedesktop.DBus.Properties",
-            "Get",
-        ) orelse return error.DBusMessageNull;
-        defer c.dbus_message_unref(msg);
-
-        var msgIter: c.DBusMessageIter = undefined;
-        _ = c.dbus_message_iter_init_append(msg, &msgIter);
-        const iface: [*:0]const u8 = "org.bluez.MediaPlayer1";
-        const prop: [*:0]const u8 = "Track";
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&iface));
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&prop));
-
-        var bufErr: DbusError = undefined;
-        const dbusError: *c.DBusError = @ptrCast(&bufErr);
-        c.dbus_error_init(dbusError);
-        defer c.dbus_error_free(dbusError);
-
-        const reply = c.dbus_connection_send_with_reply_and_block(
-            self.dbus.conn, msg, -1, dbusError,
-        ) orelse return error.SemRespostaDoDbus;
-        defer c.dbus_message_unref(reply);
-
-        var iter: c.DBusMessageIter = undefined;
-        if (c.dbus_message_iter_init(reply, &iter) == 0) return error.EmptyReply;
-
-        // Nível 1: VARIANT
-        if (c.dbus_message_iter_get_arg_type(&iter) != c.DBUS_TYPE_VARIANT) return error.UnexpectedType;
-        var variant: c.DBusMessageIter = undefined;
-        c.dbus_message_iter_recurse(&iter, &variant);
-
-        // Nível 2: ARRAY de DICT_ENTRY {sv}
-        if (c.dbus_message_iter_get_arg_type(&variant) != c.DBUS_TYPE_ARRAY) return error.UnexpectedType;
-        var array: c.DBusMessageIter = undefined;
-        c.dbus_message_iter_recurse(&variant, &array);
-
-        // Itera cada DICT_ENTRY
-        while (c.dbus_message_iter_get_arg_type(&array) == c.DBUS_TYPE_DICT_ENTRY) {
-            var entry: c.DBusMessageIter = undefined;
-            c.dbus_message_iter_recurse(&array, &entry);
-
-            // Chave (string)
-            var key: [*c]const u8 = undefined;
-            c.dbus_message_iter_get_basic(&entry, @ptrCast(&key));
-            _ = c.dbus_message_iter_next(&entry);
-
-            // Valor (variant)
-            var val_variant: c.DBusMessageIter = undefined;
-            c.dbus_message_iter_recurse(&entry, &val_variant);
-
-            const key_str = std.mem.span(key);
-
-            if (std.mem.eql(u8, key_str, "Title")) {
-                var s: [*c]const u8 = undefined;
-                c.dbus_message_iter_get_basic(&val_variant, @ptrCast(&s));
-                const span = std.mem.span(s);
-                @memcpy(out.title[0..span.len], span);
-                out.title[span.len] = 0;
-
-            } else if (std.mem.eql(u8, key_str, "Artist")) {
-                var s: [*c]const u8 = undefined;
-                c.dbus_message_iter_get_basic(&val_variant, @ptrCast(&s));
-                const span = std.mem.span(s);
-                @memcpy(out.artist[0..span.len], span);
-                out.artist[span.len] = 0;
-
-            } else if (std.mem.eql(u8, key_str, "Album")) {
-                var s: [*c]const u8 = undefined;
-                c.dbus_message_iter_get_basic(&val_variant, @ptrCast(&s));
-                const span = std.mem.span(s);
-                @memcpy(out.album[0..span.len], span);
-                out.album[span.len] = 0;
-
-            } else if (std.mem.eql(u8, key_str, "Duration")) {
-                var v: u32 = undefined;
-                c.dbus_message_iter_get_basic(&val_variant, @ptrCast(&v));
-                out.duration = v;
-
-            } else if (std.mem.eql(u8, key_str, "TrackNumber")) {
-                var v: u32 = undefined;
-                c.dbus_message_iter_get_basic(&val_variant, @ptrCast(&v));
-                out.track_number = v;
-
-            } else if (std.mem.eql(u8, key_str, "NumberOfTracks")) {
-                var v: u32 = undefined;
-                c.dbus_message_iter_get_basic(&val_variant, @ptrCast(&v));
-                out.number_of_tracks = v;
-            }
-
-            _ = c.dbus_message_iter_next(&array);
-        }
-
-        out.position = self.getPosition() catch 0;
-        out.playing = self.isPlaying();
+        try MusicController.getTrackInfo(self, out);
     }
 
     pub fn isPlaying(self: *BluetoothManager) bool {
-        const player = self.player_path orelse return false;
-
-        const msg = c.dbus_message_new_method_call(
-            "org.bluez",
-            player,
-            "org.freedesktop.DBus.Properties",
-            "Get",
-        ) orelse return false;
-        defer c.dbus_message_unref(msg);
-
-        var msgIter: c.DBusMessageIter = undefined;
-        _ = c.dbus_message_iter_init_append(msg, &msgIter);
-        const iface: [*:0]const u8 = "org.bluez.MediaPlayer1";
-        const prop: [*:0]const u8 = "Status";
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&iface));
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&prop));
-
-        var bufErr: DbusError = undefined;
-        const dbusError: *c.DBusError = @ptrCast(&bufErr);
-        c.dbus_error_init(dbusError);
-        defer c.dbus_error_free(dbusError);
-
-        const reply = c.dbus_connection_send_with_reply_and_block(
-            self.dbus.conn, msg, -1, dbusError,
-        ) orelse return false;
-        defer c.dbus_message_unref(reply);
-
-        var iter: c.DBusMessageIter = undefined;
-        if (c.dbus_message_iter_init(reply, &iter) == 0) return false;
-        if (c.dbus_message_iter_get_arg_type(&iter) != c.DBUS_TYPE_VARIANT) return false;
-
-        var variant: c.DBusMessageIter = undefined;
-        c.dbus_message_iter_recurse(&iter, &variant);
-        if (c.dbus_message_iter_get_arg_type(&variant) != c.DBUS_TYPE_STRING) return false;
-
-        var status: [*c]const u8 = undefined;
-        c.dbus_message_iter_get_basic(&variant, @ptrCast(&status));
-
-        return std.mem.eql(u8, std.mem.span(status), "playing");
+        return MusicController.isPlaying(self);
     }
 
     pub fn getPosition(self: *BluetoothManager) !u32 {
-        const player = self.player_path orelse return error.NoPlayer;
+        return try MusicController.getPosition(self);
+    }
 
-        const msg = c.dbus_message_new_method_call(
-            "org.bluez",
-            player,
-            "org.freedesktop.DBus.Properties",
-            "Get",
-        ) orelse return error.DBusMessageNull;
-        defer c.dbus_message_unref(msg);
-
-        var msgIter: c.DBusMessageIter = undefined;
-        _ = c.dbus_message_iter_init_append(msg, &msgIter);
-        const iface: [*:0]const u8 = "org.bluez.MediaPlayer1";
-        const prop: [*:0]const u8 = "Position";
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&iface));
-        _ = c.dbus_message_iter_append_basic(&msgIter, c.DBUS_TYPE_STRING, @ptrCast(&prop));
-
-        var bufErr: DbusError = undefined;
-        const dbusError: *c.DBusError = @ptrCast(&bufErr);
-        c.dbus_error_init(dbusError);
-        defer c.dbus_error_free(dbusError);
-
-        const reply = c.dbus_connection_send_with_reply_and_block(
-            self.dbus.conn, msg, -1, dbusError,
-        ) orelse return error.SemRespostaDoDbus;
-        defer c.dbus_message_unref(reply);
-
-        var iter: c.DBusMessageIter = undefined;
-        if (c.dbus_message_iter_init(reply, &iter) == 0) return error.EmptyReply;
-
-        // VARIANT contendo u32
-        if (c.dbus_message_iter_get_arg_type(&iter) != c.DBUS_TYPE_VARIANT) return error.UnexpectedType;
-        var variant: c.DBusMessageIter = undefined;
-        c.dbus_message_iter_recurse(&iter, &variant);
-
-        var position: u32 = undefined;
-        c.dbus_message_iter_get_basic(&variant, @ptrCast(&position));
-
-        return position;
+    pub fn getMusicPlayer(self: *BluetoothManager) !void {
+        try MusicController.getMusicPlayer(self);
     }
 };
