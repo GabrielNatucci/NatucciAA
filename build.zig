@@ -23,7 +23,12 @@ pub fn build(b: *std.Build) void {
     // AASDK Integration
     exe.addCSourceFile(.{
         .file = b.path("src/core/aasdk/aasdk_wrapper.cpp"),
-        .flags = &[_][]const u8{"-std=c++14"}, // ajuste a versão do c++ se necessário (14 ou 17)
+        .flags = &[_][]const u8{"-std=c++17"},
+    });
+
+    exe.addCSourceFile(.{
+        .file = b.path("src/core/aasdk/context/bluetooth/bluetooth_context.cpp"),
+        .flags = &[_][]const u8{"-std=c++17"},
     });
 
     exe.linkSystemLibrary("aasdk");

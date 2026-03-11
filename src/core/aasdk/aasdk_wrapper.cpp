@@ -1,25 +1,29 @@
 #include "aasdk_wrapper.h"
+#include <aasdk/Messenger/IMessenger.hpp>
+#include <boost/asio/io_context.hpp>
 #include <iostream>
+#include "context/bluetooth/bluetooth_context.hpp"
+#include <aasdk/Channel/Bluetooth/BluetoothService.hpp>
 #include <memory>
 
-// Include AASDK headers here later when you know exactly what you need.
-// #include <aasdk/...>
 
-// Struct definition to hold the actual C++ objects from AASDK.
-// This is the implementation of the opaque pointer from the C header.
 struct AASDK_Context {
-    // TODO: Add actual AASDK C++ objects here, e.g.,
-    // std::shared_ptr<aasdk::io::PromiseFactory> promise_factory;
-    // std::shared_ptr<aasdk::io::Strand> strand;
-
     bool is_running;
+    BluetoothContext* btContext;
+
+    // boost
+    std::shared_ptr<boost::asio::io_context> ioContext;
+    std::unique_ptr<boost::asio::io_context::strand> strand;
+
+    aasdk::messenger::IMessenger::Pointer messenger;
 
     AASDK_Context() : is_running(false) {
-        // Initialize basic AASDK components here
+        ioContext = std::make_shared<boost::asio::io_context>();
+        strand = std::make_unique<boost::asio::io_context::strand>(*ioContext);
+        btContext = initBtContext();
     }
 
     ~AASDK_Context() {
-        // Cleanup AASDK components here
     }
 };
 
@@ -41,6 +45,7 @@ AASDK_Context* aasdk_create_context(void) {
 
 void aasdk_destroy_context(AASDK_Context* ctx) {
     if (ctx != nullptr) {
+        destroyBtContext(ctx->btContext);
         delete ctx;
         std::cout << "[Android auto wrapper] Contexto destruido.\n";
     }
@@ -49,7 +54,6 @@ void aasdk_destroy_context(AASDK_Context* ctx) {
 int aasdk_start(AASDK_Context* ctx) {
     if (ctx == nullptr) return -1;
 
-    // TODO: Implement actual start logic using AASDK
     if (!ctx->is_running) {
         ctx->is_running = true;
         std::cout << "[Android auto wrapper] AASDK iniciado.\n";
