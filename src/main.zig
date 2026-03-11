@@ -11,7 +11,7 @@ const BluetoothScene = @import("core/scenes/BluetoothScene.zig").BluetoothScene;
 const Scene = @import("core/scenes/Scene.zig").Scene;
 const bt = @import("core/bluetooth/BluetoothManager.zig");
 const dbus = @import("core/dbus/dbus.zig");
-const aasdk = @import("aasdk/aasdk.zig");
+const aasdk = @import("core/aasdk/aasdk.zig");
 
 var renderer: ?*sdl.SDL_Renderer = null;
 var window: ?*sdl.SDL_Window = null;
