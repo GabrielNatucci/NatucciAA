@@ -18,6 +18,7 @@ pub fn build(b: *std.Build) void {
     exe.linkSystemLibrary("SDL2_mixer");
     exe.linkSystemLibrary("SDL2_ttf");
     exe.linkSystemLibrary("dbus-1");
+    exe.linkSystemLibrary("usb-1.0");
     exe.linkLibC();
 
     // AASDK Integration

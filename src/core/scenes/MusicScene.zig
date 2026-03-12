@@ -90,16 +90,17 @@ pub const MusicScene = struct {
     }
 
     pub fn deinit(self: *MusicScene) void {
-        std.debug.print("Desligando musicScene\n", .{});
         self.pageName.deinit();
         self.nextMusicImg.deinit();
         self.prevMusicImg.deinit();
         self.pauseMusicImg.deinit();
         self.goBackImg.deinit();
         self.resumeMusicImg.deinit();
-        self.stopCava();
 
+        self.stopCava();
         self.deinitMusicInfo();
+
+        std.debug.print("Desligando musicScene\n", .{});
     }
 
     pub fn deinitMusicInfo(self: *MusicScene) void {

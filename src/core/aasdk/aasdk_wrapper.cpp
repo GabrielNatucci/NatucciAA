@@ -21,6 +21,10 @@ struct AASDK_Context {
         ioContext = std::make_shared<boost::asio::io_context>();
         strand = std::make_unique<boost::asio::io_context::strand>(*ioContext);
         btContext = initBtContext();
+
+        // auto transport = std::make_shared<aasdk::transport::USBTransport>(usbWrapper);
+
+        // auto transport = std::make_shared<aasdk::transport::USBTransport>(...);
     }
 
     ~AASDK_Context() {
