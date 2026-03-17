@@ -3,17 +3,20 @@
 #include <boost/asio/io_context.hpp>
 #include <iostream>
 #include "context/bluetooth/bluetooth_context.hpp"
+#include "context/usb/usb_context.hpp"
 #include <aasdk/Channel/Bluetooth/BluetoothService.hpp>
 #include <memory>
-
+#include <thread>
 
 struct AASDK_Context {
     bool is_running;
     BluetoothContext* btContext;
+    UsbContext* usbContext;
 
     // boost
     std::shared_ptr<boost::asio::io_context> ioContext;
     std::unique_ptr<boost::asio::io_context::strand> strand;
+    std::thread ioThread;
 
     aasdk::messenger::IMessenger::Pointer messenger;
 
@@ -21,10 +24,7 @@ struct AASDK_Context {
         ioContext = std::make_shared<boost::asio::io_context>();
         strand = std::make_unique<boost::asio::io_context::strand>(*ioContext);
         btContext = initBtContext();
-
-        // auto transport = std::make_shared<aasdk::transport::USBTransport>(usbWrapper);
-
-        // auto transport = std::make_shared<aasdk::transport::USBTransport>(...);
+        usbContext = initUsbContext(*ioContext);
     }
 
     ~AASDK_Context() {
@@ -49,7 +49,9 @@ AASDK_Context* aasdk_create_context(void) {
 
 void aasdk_destroy_context(AASDK_Context* ctx) {
     if (ctx != nullptr) {
+        aasdk_stop(ctx);
         destroyBtContext(ctx->btContext);
+        destroyUsbContext(ctx->usbContext);
         delete ctx;
         std::cout << "[Android auto wrapper] Contexto destruido.\n";
     }
@@ -60,6 +62,14 @@ int aasdk_start(AASDK_Context* ctx) {
 
     if (!ctx->is_running) {
         ctx->is_running = true;
+        
+        startUsbContext(ctx->usbContext);
+        
+        ctx->ioThread = std::thread([ctx]() {
+            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard(ctx->ioContext->get_executor());
+            ctx->ioContext->run();
+        });
+
         std::cout << "[Android auto wrapper] AASDK iniciado.\n";
         return 0; // Success
     }
@@ -70,9 +80,16 @@ int aasdk_start(AASDK_Context* ctx) {
 void aasdk_stop(AASDK_Context* ctx) {
     if (ctx == nullptr) return;
 
-    // TODO: Implement actual stop logic using AASDK
     if (ctx->is_running) {
         ctx->is_running = false;
+        
+        stopUsbContext(ctx->usbContext);
+        ctx->ioContext->stop();
+        
+        if (ctx->ioThread.joinable()) {
+            ctx->ioThread.join();
+        }
+
         std::cout << "[Android auto wrapper] AASDK parado.\n";
     }
 }

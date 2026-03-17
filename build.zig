@@ -24,17 +24,22 @@ pub fn build(b: *std.Build) void {
     // AASDK Integration
     exe.addCSourceFile(.{
         .file = b.path("src/core/aasdk/aasdk_wrapper.cpp"),
-        .flags = &[_][]const u8{"-std=c++17"},
+        .flags = &[_][]const u8{"-std=c++17", "-stdlib=libstdc++"},
     });
 
     exe.addCSourceFile(.{
         .file = b.path("src/core/aasdk/context/bluetooth/bluetooth_context.cpp"),
-        .flags = &[_][]const u8{"-std=c++17"},
+        .flags = &[_][]const u8{"-std=c++17", "-stdlib=libstdc++"},
+    });
+
+    exe.addCSourceFile(.{
+        .file = b.path("src/core/aasdk/context/usb/usb_context.cpp"),
+        .flags = &[_][]const u8{"-std=c++17", "-stdlib=libstdc++"},
     });
 
     exe.linkSystemLibrary("aasdk");
     exe.linkSystemLibrary("aap_protobuf");
-    exe.linkLibCpp();
+    exe.linkSystemLibrary("stdc++");
 
     b.installArtifact(exe);
 
