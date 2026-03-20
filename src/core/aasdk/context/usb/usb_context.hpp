@@ -1,6 +1,7 @@
 #ifndef USB_CONTEXT_HPP
 #define USB_CONTEXT_HPP
 
+#include <aasdk/USB/ConnectedAccessoriesEnumerator.hpp>
 #include <aasdk/USB/USBHub.hpp>
 #include <aasdk/USB/USBWrapper.hpp>
 #include <aasdk/USB/AccessoryModeQueryChainFactory.hpp>
@@ -17,6 +18,7 @@ struct UsbContext {
     std::shared_ptr<aasdk::usb::AccessoryModeQueryChainFactory> queryChainFactory;
     std::shared_ptr<aasdk::usb::USBHub> usbHub;
     std::shared_ptr<aasdk::transport::USBTransport> usbTransport;
+    std::shared_ptr<aasdk::usb::ConnectedAccessoriesEnumerator> enumerator;
     boost::asio::io_context& ioContext_;
 
     UsbContext(boost::asio::io_context& ioContext);

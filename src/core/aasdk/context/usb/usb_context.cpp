@@ -11,6 +11,11 @@ UsbContext::UsbContext(boost::asio::io_context& ioContext) : libusbCtx(nullptr),
     queryFactory = std::make_shared<aasdk::usb::AccessoryModeQueryFactory>(*usbWrapper, ioContext_);
     queryChainFactory = std::make_shared<aasdk::usb::AccessoryModeQueryChainFactory>(*usbWrapper, ioContext_, *queryFactory);
     usbHub = std::make_shared<aasdk::usb::USBHub>(*usbWrapper, ioContext_, *queryChainFactory);
+    this->enumerator = std::make_shared<aasdk::usb::ConnectedAccessoriesEnumerator>(
+        *usbWrapper, 
+        ioContext_, 
+        *queryChainFactory
+    );
 }
 
 UsbContext::~UsbContext() {
@@ -23,6 +28,8 @@ UsbContext::~UsbContext() {
 
 void UsbContext::start() {
     startDeviceDiscovery();
+
+
 }
 
 void UsbContext::stop() {
