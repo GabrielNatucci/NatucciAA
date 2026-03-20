@@ -9,6 +9,8 @@
 #include <aasdk/Transport/USBTransport.hpp>
 #include <boost/asio.hpp>
 #include <memory>
+#include <thread>
+#include <atomic>
 #include <libusb-1.0/libusb.h>
 
 struct UsbContext {
@@ -20,6 +22,9 @@ struct UsbContext {
     std::shared_ptr<aasdk::transport::USBTransport> usbTransport;
     std::shared_ptr<aasdk::usb::ConnectedAccessoriesEnumerator> enumerator;
     boost::asio::io_context& ioContext_;
+
+    std::thread usbEventsThread;
+    std::atomic<bool> isUsbRunning;
 
     UsbContext(boost::asio::io_context& ioContext);
     ~UsbContext();

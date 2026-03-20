@@ -2,7 +2,7 @@
 #include <iostream>
 #include <aasdk/USB/AOAPDevice.hpp>
 
-UsbContext::UsbContext(boost::asio::io_context& ioContext) : libusbCtx(nullptr), ioContext_(ioContext) {
+UsbContext::UsbContext(boost::asio::io_context& ioContext) : libusbCtx(nullptr), ioContext_(ioContext), isUsbRunning(false) {
     if (libusb_init(&libusbCtx) != LIBUSB_SUCCESS) {
         throw std::runtime_error("Failed to initialize libusb");
     }
@@ -27,6 +27,14 @@ UsbContext::~UsbContext() {
 }
 
 void UsbContext::start() {
+    isUsbRunning = true;
+    usbEventsThread = std::thread([this]() {
+        while (isUsbRunning) {
+            struct timeval tv = {1, 0}; // 1 second timeout
+            libusb_handle_events_timeout(libusbCtx, &tv);
+        }
+    });
+
     startDeviceDiscovery();
 
     auto enumPromise = aasdk::usb::IConnectedAccessoriesEnumerator::Promise::defer(ioContext_);
@@ -41,6 +49,11 @@ void UsbContext::start() {
 }
 
 void UsbContext::stop() {
+    isUsbRunning = false;
+    if (usbEventsThread.joinable()) {
+        usbEventsThread.join();
+    }
+
     if (usbHub) {
         usbHub->cancel();
     }
@@ -58,8 +71,6 @@ void UsbContext::startDeviceDiscovery() {
         std::cout << "[UsbContext DISP CONECTADO] AOAP conectado!\n";
         auto aoapDevice = aasdk::usb::AOAPDevice::create(*usbWrapper, ioContext_, handle);
         usbTransport = std::make_shared<aasdk::transport::USBTransport>(ioContext_, aoapDevice);
-        
-        // TODO: Start the Messenger and Session using this transport
     }, [this](const aasdk::error::Error& error) {
         std::cerr << "[UsbContext] Device discovery failed or cancelled. Error: " << error.what() << "\n";
     });
