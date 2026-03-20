@@ -67,6 +67,12 @@ pub fn initSomeStuff() u2 {
 
     btManager = bt.BluetoothManager.init(&dbusImpl.?, allocator.allocator());
 
+
+    sceneManager = SceneManager.init(renderer.?, &btManager.?, allocator.allocator()) catch |err| {
+        std.debug.print("Erro ao iniciar o SceneManager: {}", .{err});
+        return 1;
+    };
+
     aaManager = aasdk.AASdk.init() catch |err| {
         std.debug.print("Erro ao iniciar AASDK: {}\n", .{err});
         return 1;
@@ -76,11 +82,6 @@ pub fn initSomeStuff() u2 {
             std.debug.print("Erro ao fazer start no AASDK: {}\n", .{err});
         };
     }
-
-    sceneManager = SceneManager.init(renderer.?, &btManager.?, allocator.allocator()) catch |err| {
-        std.debug.print("Erro ao iniciar o SceneManager: {}", .{err});
-        return 1;
-    };
 
     _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_SCALE_QUALITY, "2");
     _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_VSYNC, "1");

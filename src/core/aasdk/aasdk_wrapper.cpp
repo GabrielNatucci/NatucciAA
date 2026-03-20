@@ -71,10 +71,10 @@ int aasdk_start(AASDK_Context* ctx) {
         });
 
         std::cout << "[Android auto wrapper] AASDK iniciado.\n";
-        return 0; // Success
+        return 0; // Sucesso
     }
 
-    return -2; // Already running
+    return -2; // já rodando
 }
 
 void aasdk_stop(AASDK_Context* ctx) {

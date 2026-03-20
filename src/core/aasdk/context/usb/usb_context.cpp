@@ -36,10 +36,11 @@ void UsbContext::stop() {
 }
 
 void UsbContext::startDeviceDiscovery() {
+    std::cout << "\n[UsbContext] Começando usb discovery\n";
     auto promise = aasdk::usb::IUSBHub::Promise::defer(ioContext_);
 
     promise->then([this](aasdk::usb::DeviceHandle handle) {
-        std::cout << "[UsbContext] AOAP Device Connected!\n";
+        std::cout << "[UsbContext DISP CONECTADO] AOAP conectado!\n";
         auto aoapDevice = aasdk::usb::AOAPDevice::create(*usbWrapper, ioContext_, handle);
         usbTransport = std::make_shared<aasdk::transport::USBTransport>(ioContext_, aoapDevice);
         
@@ -73,7 +74,7 @@ extern "C" {
     int startUsbContext(UsbContext* usbContext) {
         if (usbContext == nullptr) return -1;
         usbContext->start();
-        std::cout << "[UsbContext] iniciado com sucesso!\n";
+        std::cout << "[UsbContext] iniciado com sucesso!\n\n";
         return 1;
     }
 
