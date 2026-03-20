@@ -29,7 +29,15 @@ UsbContext::~UsbContext() {
 void UsbContext::start() {
     startDeviceDiscovery();
 
+    auto enumPromise = aasdk::usb::IConnectedAccessoriesEnumerator::Promise::defer(ioContext_);
+    enumPromise->then([](bool success) {
+        std::cout << "[UsbContext] Enumerator finalizou: " << (success ? "sucesso" : "falha") << "\n";
+    }, [](const aasdk::error::Error& error) {
+        std::cerr << "[UsbContext] Enumerator erro: " << error.what() << "\n";
+    });
 
+    std::cout << "[UsbContext] Procurando dispositivos já plugados...\n";
+    this->enumerator->enumerate(enumPromise);
 }
 
 void UsbContext::stop() {
