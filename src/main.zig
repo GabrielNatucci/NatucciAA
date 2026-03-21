@@ -132,8 +132,8 @@ pub fn loop() !void {
         const timeDiff = current - oldMili;
 
         if (timeDiff >= 1000) { // dps de um segundo
-            const fps = (@as(f64, @floatFromInt(framesCounted)) * 1000.0) / @as(f64, @floatFromInt(timeDiff));
-            std.debug.print("FPS: {d:.0}\n", .{fps});
+            // const fps = (@as(f64, @floatFromInt(framesCounted)) * 1000.0) / @as(f64, @floatFromInt(timeDiff));
+            // std.debug.print("FPS: {d:.0}\n", .{fps});
 
             oldMili = current;
             framesCounted = 0;
