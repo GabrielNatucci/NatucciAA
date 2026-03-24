@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const sdl = @import("../../../sdlImport/Sdl.zig").sdl;
-const Text = @import("../components/Text.zig").Text;
+const Text = @import("../shared_components//Text.zig").Text;
 
 pub const backButtonDest: sdl.SDL_Rect = .{ .x = 10, .y = 0, .w = 70, .h = 70 };
 

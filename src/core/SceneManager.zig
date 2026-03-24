@@ -1,10 +1,10 @@
 const std = @import("std");
 const Scene = @import("scenes/Scene.zig").Scene;
 const sdl = @import("../sdlImport/Sdl.zig").sdl;
-const HomeScene = @import("./scenes/HomeScene.zig").HomeScene;
-const ConfigScene = @import("./scenes/ConfigScene.zig").ConfigScene;
-const BluetoothScene = @import("./scenes/BluetoothScene.zig").BluetoothScene;
-const MusicScene = @import("./scenes/MusicScene.zig").MusicScene;
+const HomeScene = @import("./scenes/home_scene/HomeScene.zig").HomeScene;
+const ConfigScene = @import("./scenes/config_scene/ConfigScene.zig").ConfigScene;
+const BluetoothScene = @import("./scenes/bluetooth_scene/BluetoothScene.zig").BluetoothScene;
+const MusicScene = @import("./scenes/music_scene//MusicScene.zig").MusicScene;
 const bt = @import("bluetooth/BluetoothManager.zig");
 
 const WIDTH_RES = @import("../main.zig").WIDTH;

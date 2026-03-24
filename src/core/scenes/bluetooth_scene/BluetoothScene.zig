@@ -1,19 +1,19 @@
 const ArrayList = std.array_list.Managed;
 
-const bt = @import("../../core/bluetooth/BluetoothManager.zig");
-const sdl = @import("../../sdlImport/Sdl.zig").sdl;
-const textureUtil = @import("../../util/SDLTextureUtil.zig");
-const timeUtil = @import("../../util/TimeUtil.zig");
-const Device = @import("../bluetooth/manager/structs/Device.zig").Device;
-const Loading = @import("./components/Loading.zig").Loading;
-const SceneManager = @import("../SceneManager.zig").SceneManager;
-const Scene = @import("Scene.zig");
-const Text = @import("./components/Text.zig").Text;
+const bt = @import("../../../core/bluetooth/BluetoothManager.zig");
+const sdl = @import("../../../sdlImport/Sdl.zig").sdl;
+const textureUtil = @import("../../../util/SDLTextureUtil.zig");
+const timeUtil = @import("../../../util/TimeUtil.zig");
+const Device = @import("../../bluetooth/manager/structs/Device.zig").Device;
+const Loading = @import("../shared_components/Loading.zig").Loading;
+const SceneManager = @import("../../SceneManager.zig").SceneManager;
+const Scene = @import("../Scene.zig");
+const Text = @import("../shared_components/Text.zig").Text;
 const std = @import("std");
 
 // Constantes de UI - Proporcionais à tela
-const LARGURA_TELA = @import("../../main.zig").WIDTH;
-const ALTURA_TELA = @import("../../main.zig").HEIGHT;
+const LARGURA_TELA = @import("../../../main.zig").WIDTH;
+const ALTURA_TELA = @import("../../../main.zig").HEIGHT;
 const COR_BRANCA: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 
 // Fontes

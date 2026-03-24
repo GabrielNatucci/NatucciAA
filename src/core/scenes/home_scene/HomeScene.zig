@@ -1,9 +1,9 @@
 const std = @import("std");
-const sdl = @import("../../sdlImport/Sdl.zig").sdl;
-const Scene = @import("Scene.zig").Scene;
-const SceneManager = @import("../SceneManager.zig");
-const timeUtil = @import("../../util/TimeUtil.zig");
-const textureUtil = @import("../../util/SDLTextureUtil.zig");
+const sdl = @import("../../../sdlImport/Sdl.zig").sdl;
+const Scene = @import("../Scene.zig").Scene;
+const SceneManager = @import("../../SceneManager.zig");
+const timeUtil = @import("../../../util/TimeUtil.zig");
+const textureUtil = @import("../../../util/SDLTextureUtil.zig");
 
 pub const iconsSize: c_int = 120;
 pub const buttonsHeight: c_int = 500;

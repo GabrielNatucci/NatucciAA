@@ -1,14 +1,14 @@
 const std = @import("std");
 
-const LARGURA_TELA = @import("../../main.zig").WIDTH;
-const ALTURA_TELA = @import("../../main.zig").HEIGHT;
-const sdl = @import("../../sdlImport/Sdl.zig").sdl;
-const textureUtil = @import("../../util/SDLTextureUtil.zig");
-const timeUtil = @import("../../util/TimeUtil.zig");
-const SceneManager = @import("../SceneManager.zig").SceneManager;
-const Text = @import("./components/Text.zig").Text;
-const SceneUtil = @import("./sceneUtil/SceneUtil.zig");
-const Scene = @import("Scene.zig");
+const LARGURA_TELA = @import("../../../main.zig").WIDTH;
+const ALTURA_TELA = @import("../../../main.zig").HEIGHT;
+const sdl = @import("../../../sdlImport/Sdl.zig").sdl;
+const textureUtil = @import("../../../util/SDLTextureUtil.zig");
+const timeUtil = @import("../../../util/TimeUtil.zig");
+const SceneManager = @import("../../SceneManager.zig").SceneManager;
+const Text = @import("../shared_components/Text.zig").Text;
+const SceneUtil = @import(".././sceneUtil/SceneUtil.zig");
+const Scene = @import("../Scene.zig");
 
 const BRANCO: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 const TAMANHO_FONTE_TITULO: c_int = @intFromFloat(@as(f32, ALTURA_TELA) * 0.045); // Aprox. 32 para 720p

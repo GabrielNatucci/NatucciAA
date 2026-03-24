@@ -1,17 +1,17 @@
 const std = @import("std");
 
-const bt = @import("../../core/bluetooth/BluetoothManager.zig");
-const LARGURA_TELA = @import("../../main.zig").WIDTH;
-const ALTURA_TELA = @import("../../main.zig").HEIGHT;
-const sdl = @import("../../sdlImport/Sdl.zig").sdl;
-const textureUtil = @import("../../util/SDLTextureUtil.zig");
-const timeUtil = @import("../../util/TimeUtil.zig");
-const SceneManager = @import("../SceneManager.zig").SceneManager;
-const TrackInfo = @import("./../bluetooth/manager/structs/TrackInfo.zig").TrackInfo;
-const Image = @import("./components/Image.zig").Image;
-const Text = @import("./components/Text.zig").Text;
-const SceneUtil = @import("./sceneUtil/SceneUtil.zig");
-const Scene = @import("Scene.zig");
+const bt = @import("../../../core/bluetooth/BluetoothManager.zig");
+const LARGURA_TELA = @import("../../../main.zig").WIDTH;
+const ALTURA_TELA = @import("../../../main.zig").HEIGHT;
+const sdl = @import("../../../sdlImport/Sdl.zig").sdl;
+const textureUtil = @import("../../../util/SDLTextureUtil.zig");
+const timeUtil = @import("../../../util/TimeUtil.zig");
+const SceneManager = @import("../../SceneManager.zig").SceneManager;
+const TrackInfo = @import(".././../bluetooth/manager/structs/TrackInfo.zig").TrackInfo;
+const Image = @import("../shared_components/Image.zig").Image;
+const Text = @import("../shared_components/Text.zig").Text;
+const SceneUtil = @import(".././sceneUtil/SceneUtil.zig");
+const Scene = @import("../Scene.zig");
 
 const BRANCO: sdl.SDL_Color = .{ .a = 255, .r = 255, .g = 255, .b = 255 };
 const CINZINHA: sdl.SDL_Color = .{ .a = 255, .r = 215, .g = 215, .b = 225 };
