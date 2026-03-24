@@ -26,6 +26,7 @@ pub fn build(b: *std.Build) void {
         "src/core/aasdk/aasdk_wrapper.cpp",
         "src/core/aasdk/context/bluetooth/bluetooth_context.cpp",
         "src/core/aasdk/context/usb/usb_context.cpp",
+        "src/core/aasdk/context/AndroidAutoFactory.cpp",
     };
 
     for (cpp_sources) |src| {

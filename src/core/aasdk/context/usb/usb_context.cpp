@@ -1,3 +1,4 @@
+
 #include "usb_context.hpp"
 #include <iostream>
 #include <aasdk/USB/AOAPDevice.hpp>
@@ -20,6 +21,15 @@ UsbContext::UsbContext(boost::asio::io_context& ioContext) : libusbCtx(nullptr),
 
 UsbContext::~UsbContext() {
     stop();
+    
+    // Reseta explicitamente os shared pointers que dependem do libusb antes de sair do libusb
+    enumerator.reset();
+    usbHub.reset();
+    queryChainFactory.reset();
+    queryFactory.reset();
+    usbTransport.reset();
+    usbWrapper.reset();
+
     if (libusbCtx) {
         libusb_exit(libusbCtx);
         libusbCtx = nullptr;
@@ -30,7 +40,7 @@ void UsbContext::start() {
     isUsbRunning = true;
     usbEventsThread = std::thread([this]() {
         while (isUsbRunning) {
-            struct timeval tv = {1, 0}; // 1 second timeout
+            struct timeval tv = {1, 0}; // timeout de 1 segundo
             libusb_handle_events_timeout(libusbCtx, &tv);
         }
     });
@@ -44,7 +54,7 @@ void UsbContext::start() {
         std::cerr << "[UsbContext] Enumerator erro: " << error.what() << "\n";
     });
 
-    std::cout << "[UsbContext] Procurando dispositivos já plugados...\n";
+    std::cout << "[UsbContext] Procurando dispositivos já conectados no pc..\n";
     this->enumerator->enumerate(enumPromise);
 }
 
@@ -71,11 +81,24 @@ void UsbContext::startDeviceDiscovery() {
         std::cout << "[UsbContext DISP CONECTADO] AOAP conectado!\n";
         auto aoapDevice = aasdk::usb::AOAPDevice::create(*usbWrapper, ioContext_, handle);
         usbTransport = std::make_shared<aasdk::transport::USBTransport>(ioContext_, aoapDevice);
+        
+        if (onDeviceConnectedCallback) {
+            onDeviceConnectedCallback(usbTransport);
+        }
     }, [this](const aasdk::error::Error& error) {
         std::cerr << "[UsbContext] Device discovery failed or cancelled. Error: " << error.what() << "\n";
     });
 
     usbHub->start(promise);
+}
+
+void UsbContext::clearAsioObjects() {
+    enumerator.reset();
+    usbHub.reset();
+    queryChainFactory.reset();
+    queryFactory.reset();
+    usbTransport.reset();
+    usbWrapper.reset();
 }
 
 extern "C" {
@@ -87,6 +110,18 @@ extern "C" {
         } catch (...) {
             std::cerr << "Erro ao criar o [UsbContext]\n";
             return nullptr;
+        }
+    }
+
+    void setUsbDeviceConnectedCallback(UsbContext* usbContext, std::function<void(aasdk::transport::ITransport::Pointer)> callback) {
+        if (usbContext) {
+            usbContext->onDeviceConnectedCallback = callback;
+        }
+    }
+
+    void clearUsbAsioObjects(UsbContext* usbContext) {
+        if (usbContext) {
+            usbContext->clearAsioObjects();
         }
     }
 

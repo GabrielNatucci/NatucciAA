@@ -4,6 +4,7 @@
 #include <iostream>
 #include "context/bluetooth/bluetooth_context.hpp"
 #include "context/usb/usb_context.hpp"
+#include "context/AndroidAutoFactory.hpp"
 #include <aasdk/Channel/Bluetooth/BluetoothService.hpp>
 #include <memory>
 #include <thread>
@@ -18,6 +19,9 @@ struct AASDK_Context {
     std::unique_ptr<boost::asio::io_context::strand> strand;
     std::thread ioThread;
 
+    std::shared_ptr<AndroidAutoFactory> factory;
+    std::shared_ptr<AndroidAutoEntity> entity;
+
     aasdk::messenger::IMessenger::Pointer messenger;
 
     AASDK_Context() : is_running(false) {
@@ -25,6 +29,8 @@ struct AASDK_Context {
         strand = std::make_unique<boost::asio::io_context::strand>(*ioContext);
         btContext = initBtContext();
         usbContext = initUsbContext(*ioContext);
+        
+        factory = std::make_shared<AndroidAutoFactory>(*ioContext);
     }
 
     ~AASDK_Context() {
@@ -50,6 +56,16 @@ AASDK_Context* aasdk_create_context(void) {
 void aasdk_destroy_context(AASDK_Context* ctx) {
     if (ctx != nullptr) {
         aasdk_stop(ctx);
+        
+        // Destruir entidades e factory ANTES de destruir os contextos de USB/BT
+        // para garantir que nenhuma referência a libusb/dbus fique viva
+        ctx->entity.reset();
+        ctx->factory.reset();
+
+        clearUsbAsioObjects(ctx->usbContext);
+        ctx->strand.reset();
+        ctx->ioContext.reset();
+
         destroyBtContext(ctx->btContext);
         destroyUsbContext(ctx->usbContext);
         delete ctx;
@@ -62,6 +78,14 @@ int aasdk_start(AASDK_Context* ctx) {
 
     if (!ctx->is_running) {
         ctx->is_running = true;
+        
+        setUsbDeviceConnectedCallback(ctx->usbContext, [ctx](aasdk::transport::ITransport::Pointer transport) {
+            std::cout << "[Android auto wrapper] Dispositivo conectado! Inicializando Android Auto Factory...\n";
+            ctx->entity = ctx->factory->create(transport);
+            if (ctx->entity) {
+                ctx->entity->start();
+            }
+        });
         
         startUsbContext(ctx->usbContext);
         

@@ -11,6 +11,7 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <functional>
 #include <libusb-1.0/libusb.h>
 
 struct UsbContext {
@@ -25,12 +26,15 @@ struct UsbContext {
 
     std::thread usbEventsThread;
     std::atomic<bool> isUsbRunning;
+    
+    std::function<void(aasdk::transport::ITransport::Pointer)> onDeviceConnectedCallback;
 
     UsbContext(boost::asio::io_context& ioContext);
     ~UsbContext();
 
     void start();
     void stop();
+    void clearAsioObjects();
 
 private:
     void startDeviceDiscovery();
@@ -38,6 +42,8 @@ private:
 
 extern "C" {
     UsbContext* initUsbContext(boost::asio::io_context& ioContext);
+    void setUsbDeviceConnectedCallback(UsbContext* usbContext, std::function<void(aasdk::transport::ITransport::Pointer)> callback);
+    void clearUsbAsioObjects(UsbContext* usbContext);
     void destroyUsbContext(UsbContext* usbContext);
     int startUsbContext(UsbContext* usbContext);
     void stopUsbContext(UsbContext* usbContext);
