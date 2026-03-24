@@ -20,6 +20,9 @@ const alloc = std.heap.c_allocator;
 pub const HEIGHT: c_int = 720;
 pub const WIDTH: c_int = 1280;
 
+pub var windowWidth: c_int = 1280; // Pode ser alterado para 1920 etc
+pub var windowHeight: c_int = 720; // Pode ser alterado para 1080 etc
+
 var sceneManager: ?SceneManager = null;
 var dbusImpl: ?dbus.DBus = null;
 var btManager: ?bt.BluetoothManager = null;
@@ -46,7 +49,7 @@ pub fn main() !void {
 }
 
 pub fn initSomeStuff() u2 {
-    window = sdl.SDL_CreateWindow("NatucciAA", sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, sdl.SDL_WINDOW_SHOWN);
+    window = sdl.SDL_CreateWindow("NatucciAA", sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE);
     if (window == null) {
         std.debug.print("Erro ao criar Janela -> {s}", .{sdl.SDL_GetError()});
         return 1;
@@ -57,6 +60,9 @@ pub fn initSomeStuff() u2 {
         std.debug.print("Erro ao criar renderer -> {s}", .{sdl.SDL_GetError()});
         return 1;
     }
+
+    // Mantém a proporção lógica (16:9), escalando ou adicionando barras pretas
+    _ = sdl.SDL_RenderSetLogicalSize(renderer, WIDTH, HEIGHT);
 
     dbusImpl = dbus.DBus.init() catch |err| {
         std.debug.print("Erro ao iniciar dbus: {}\n", .{err});
