@@ -49,7 +49,7 @@ pub fn main() !void {
 }
 
 pub fn initSomeStuff() u2 {
-    window = sdl.SDL_CreateWindow("NatucciAA", sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE);
+    window = sdl.SDL_CreateWindow("NatucciAA", sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, sdl.SDL_WINDOW_SHOWN);
     if (window == null) {
         std.debug.print("Erro ao criar Janela -> {s}", .{sdl.SDL_GetError()});
         return 1;
