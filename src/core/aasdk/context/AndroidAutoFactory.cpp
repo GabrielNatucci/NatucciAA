@@ -15,9 +15,9 @@ AndroidAutoEntityImpl::AndroidAutoEntityImpl(boost::asio::io_context& ioContext,
     std::cout << "[AndroidAutoEntity] Criando Cryptor e Messenger...\n";
     
     auto sslWrapper = std::make_shared<aasdk::transport::SSLWrapper>();
-    auto cryptor = std::make_shared<aasdk::messenger::Cryptor>(sslWrapper);
-    auto messageInStream = std::make_shared<aasdk::messenger::MessageInStream>(ioContext_, transport_, cryptor);
-    auto messageOutStream = std::make_shared<aasdk::messenger::MessageOutStream>(ioContext_, transport_, cryptor);
+    cryptor_ = std::make_shared<aasdk::messenger::Cryptor>(sslWrapper);
+    auto messageInStream = std::make_shared<aasdk::messenger::MessageInStream>(ioContext_, transport_, cryptor_);
+    auto messageOutStream = std::make_shared<aasdk::messenger::MessageOutStream>(ioContext_, transport_, cryptor_);
     
     messenger_ = std::make_shared<aasdk::messenger::Messenger>(ioContext_, messageInStream, messageOutStream);
     strand_ = std::make_shared<boost::asio::io_context::strand>(ioContext_);
@@ -31,7 +31,7 @@ void AndroidAutoEntityImpl::start() {
     std::cout << "[AndroidAutoEntity] Inicializando Canal de Controle (Handshake)...\n";
     
     controlChannel_ = std::make_shared<aasdk::channel::control::ControlServiceChannel>(*strand_, messenger_);
-    controlHandler_ = std::make_shared<natucci::ControlChannelHandler>(controlChannel_);
+    controlHandler_ = std::make_shared<natucci::ControlChannelHandler>(controlChannel_, cryptor_, *strand_);
     
     // 1. Começa a escutar o Canal 0
     controlChannel_->receive(controlHandler_);

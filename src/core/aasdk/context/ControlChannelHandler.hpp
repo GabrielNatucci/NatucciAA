@@ -4,6 +4,8 @@
 #include <aap_protobuf/service/control/message/ByeByeRequest.pb.h>
 #include <aasdk/Channel/Control/IControlServiceChannelEventHandler.hpp>
 #include <aasdk/Channel/Control/IControlServiceChannel.hpp>
+#include <aasdk/Messenger/ICryptor.hpp>
+#include <boost/asio.hpp>
 #include <memory>
 
 namespace natucci {
@@ -13,7 +15,9 @@ namespace natucci {
     public:
         typedef std::shared_ptr<ControlChannelHandler> Pointer;
 
-        ControlChannelHandler(aasdk::channel::control::IControlServiceChannel::Pointer channel);
+        ControlChannelHandler(aasdk::channel::control::IControlServiceChannel::Pointer channel,
+                              aasdk::messenger::ICryptor::Pointer cryptor,
+                              boost::asio::io_context::strand& strand);
         
         // IControlServiceChannelEventHandler implementation
         void onVersionResponse(uint16_t majorCode, uint16_t minorCode, aap_protobuf::shared::MessageStatus status) override;
@@ -31,6 +35,9 @@ namespace natucci {
 
     private:
         aasdk::channel::control::IControlServiceChannel::Pointer channel_;
+        aasdk::messenger::ICryptor::Pointer cryptor_;
+        boost::asio::io_context::strand& strand_;
+        bool isCryptorInitialized_ = false;
     };
 
 }

@@ -29,6 +29,7 @@ private:
     boost::asio::io_context& ioContext_;
     aasdk::transport::ITransport::Pointer transport_;
     aasdk::messenger::IMessenger::Pointer messenger_;
+    aasdk::messenger::ICryptor::Pointer cryptor_;
     
     std::shared_ptr<boost::asio::io_context::strand> strand_;
     aasdk::channel::control::IControlServiceChannel::Pointer controlChannel_;
