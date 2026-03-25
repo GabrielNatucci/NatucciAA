@@ -143,4 +143,5 @@ pub fn loop() !void {
             framesCounted = 0;
         }
     }
+    std.debug.print("\n>>> O loop principal terminou. Estado da variavel running: {}\n", .{running});
 }

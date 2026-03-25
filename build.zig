@@ -19,6 +19,7 @@ pub fn build(b: *std.Build) void {
     exe.linkSystemLibrary("SDL2_ttf");
     exe.linkSystemLibrary("dbus-1");
     exe.linkSystemLibrary("usb-1.0");
+    exe.linkSystemLibrary("protobuf");
     exe.linkLibC();
 
     // AASDK Integration - Compilando com g++ para evitar conflito de ABI do libc++ do Zig
@@ -27,6 +28,8 @@ pub fn build(b: *std.Build) void {
         "src/core/aasdk/context/bluetooth/bluetooth_context.cpp",
         "src/core/aasdk/context/usb/usb_context.cpp",
         "src/core/aasdk/context/AndroidAutoFactory.cpp",
+        "src/core/aasdk/context/ControlChannelHandler.cpp",
+        "src/core/aasdk/context/CarConfiguration.cpp",
     };
 
     for (cpp_sources) |src| {

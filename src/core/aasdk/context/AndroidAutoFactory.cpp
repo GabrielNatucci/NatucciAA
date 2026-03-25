@@ -1,9 +1,12 @@
 #include "AndroidAutoFactory.hpp"
+#include "ControlChannelHandler.hpp"
 #include <aasdk/Messenger/Messenger.hpp>
 #include <aasdk/Messenger/Cryptor.hpp>
 #include <aasdk/Transport/SSLWrapper.hpp>
 #include <aasdk/Messenger/MessageInStream.hpp>
 #include <aasdk/Messenger/MessageOutStream.hpp>
+#include <aasdk/Channel/Control/ControlServiceChannel.hpp>
+#include <aasdk/Channel/Promise.hpp>
 #include <iostream>
 
 AndroidAutoEntityImpl::AndroidAutoEntityImpl(boost::asio::io_context& ioContext, aasdk::transport::ITransport::Pointer transport)
@@ -17,6 +20,7 @@ AndroidAutoEntityImpl::AndroidAutoEntityImpl(boost::asio::io_context& ioContext,
     auto messageOutStream = std::make_shared<aasdk::messenger::MessageOutStream>(ioContext_, transport_, cryptor);
     
     messenger_ = std::make_shared<aasdk::messenger::Messenger>(ioContext_, messageInStream, messageOutStream);
+    strand_ = std::make_shared<boost::asio::io_context::strand>(ioContext_);
 }
 
 AndroidAutoEntityImpl::~AndroidAutoEntityImpl() {
@@ -24,13 +28,24 @@ AndroidAutoEntityImpl::~AndroidAutoEntityImpl() {
 }
 
 void AndroidAutoEntityImpl::start() {
-    std::cout << "[AndroidAutoEntity] Inicializando e aguardando chamadas do protocolo...\n";
+    std::cout << "[AndroidAutoEntity] Inicializando Canal de Controle (Handshake)...\n";
     
-    // O IMessenger nesta versão do AASDK é inicializado pelas streams de entrada/saída (MessageInStream/MessageOutStream)
-    // Logo não possui um start() explícito. Em vez disso, a gente começaria o fluxo do ControlChannel.
+    controlChannel_ = std::make_shared<aasdk::channel::control::ControlServiceChannel>(*strand_, messenger_);
+    controlHandler_ = std::make_shared<natucci::ControlChannelHandler>(controlChannel_);
+    
+    // 1. Começa a escutar o Canal 0
+    controlChannel_->receive(controlHandler_);
 
-    // Aqui no futuro vamos registrar os handlers de cada canal:
-    // messenger_->registerChannel(...)
+    // 2. Envia a solicitação de versão para o celular iniciar o protocolo
+    std::cout << "[AndroidAutoEntity] Enviando Version Request (1.6)...\n";
+    auto promise = aasdk::channel::SendPromise::defer(*strand_);
+    promise->then([]() {
+        std::cout << "[AndroidAutoEntity] Version Request enviado com sucesso!\n";
+    }, [](const aasdk::error::Error& e) {
+        std::cerr << "[AndroidAutoEntity] Erro ao enviar Version Request: " << e.what() << "\n";
+    });
+    
+    controlChannel_->sendVersionRequest(promise);
 }
 
 void AndroidAutoEntityImpl::stop() {

@@ -100,11 +100,16 @@ pub const SceneManager = struct {
 
     pub fn update(self: *SceneManager, delta_time: f32, renderer: *sdl.SDL_Renderer, event: *sdl.SDL_Event, running: *bool) void {
         while (sdl.SDL_PollEvent(event) != 0) {
-            self.current_scene.?.handleEvent(self, event);
-
             switch (event.type) {
-                sdl.SDL_QUIT => running.* = false,
+                sdl.SDL_QUIT => {
+                    std.debug.print(">>> SDL_QUIT recebido!\n", .{});
+                    running.* = false;
+                },
                 else => {},
+            }
+            
+            if (self.current_scene) |scene| {
+                scene.handleEvent(self, event);
             }
         }
 

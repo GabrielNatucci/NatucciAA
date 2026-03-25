@@ -3,7 +3,12 @@
 #include <boost/asio.hpp>
 #include <aasdk/Transport/ITransport.hpp>
 #include <aasdk/Messenger/IMessenger.hpp>
+#include <aasdk/Channel/Control/IControlServiceChannel.hpp>
 #include <memory>
+
+namespace natucci {
+    class ControlChannelHandler;
+}
 
 class AndroidAutoEntity {
 public:
@@ -24,6 +29,10 @@ private:
     boost::asio::io_context& ioContext_;
     aasdk::transport::ITransport::Pointer transport_;
     aasdk::messenger::IMessenger::Pointer messenger_;
+    
+    std::shared_ptr<boost::asio::io_context::strand> strand_;
+    aasdk::channel::control::IControlServiceChannel::Pointer controlChannel_;
+    std::shared_ptr<natucci::ControlChannelHandler> controlHandler_;
 };
 
 class AndroidAutoFactory {
