@@ -72,7 +72,7 @@ namespace natucci {
             } else {
                 std::cout << "[ControlChannel] Handshake SSL Concluído com Sucesso! Enviando AuthComplete...\n";
                 aap_protobuf::service::control::message::AuthResponse authResponse;
-                authResponse.set_status(0); 
+                authResponse.set_status(0); // OK
                 
                 auto promise = aasdk::channel::SendPromise::defer(strand_);
                 promise->then([]() {

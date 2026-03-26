@@ -80,6 +80,7 @@ void UsbContext::startDeviceDiscovery() {
     promise->then([this](aasdk::usb::DeviceHandle handle) {
         std::cout << "[UsbContext DISP CONECTADO] AOAP conectado!\n";
         auto aoapDevice = aasdk::usb::AOAPDevice::create(*usbWrapper, ioContext_, handle);
+
         usbTransport = std::make_shared<aasdk::transport::USBTransport>(ioContext_, aoapDevice);
         
         if (onDeviceConnectedCallback) {
