@@ -18,15 +18,15 @@ namespace natucci {
         if (status == 0) {
             std::cout << "[ControlChannel] Versão aceita. Iniciando o Cryptor e o Handshake SSL...\n";
             try {
-                cryptor_->init();
                 isCryptorInitialized_ = true;
                 
                 bool complete = cryptor_->doHandshake();
                 auto payload = cryptor_->readHandshakeBuffer();
+                size_t payloadSize = payload.size();
                 
                 auto promise = aasdk::channel::SendPromise::defer(strand_);
-                promise->then([]() {
-                    std::cout << "[ControlChannel] Primeiro pacote de Handshake enviado!\n";
+                promise->then([payloadSize]() {
+                    std::cout << "[ControlChannel] Primeiro pacote de Handshake enviado! Size: " << payloadSize << "\n";
                 }, [](const aasdk::error::Error& e) {
                     std::cerr << "[ControlChannel] Erro ao enviar pacote de Handshake: " << e.what() << "\n";
                 });
@@ -60,18 +60,19 @@ namespace natucci {
 
             if (!cryptor_->doHandshake()) {
                 auto responsePayload = cryptor_->readHandshakeBuffer();
+                size_t payloadSize = responsePayload.size();
                 
                 auto promise = aasdk::channel::SendPromise::defer(strand_);
-                promise->then([]() {
-                    std::cout << "[ControlChannel] Resposta de Handshake enviada.\n";
+                promise->then([payloadSize]() {
+                    std::cout << "[ControlChannel] Resposta de Handshake enviada. Size: " << payloadSize << "\n";
                 }, [](const aasdk::error::Error& e) {
                     std::cerr << "[ControlChannel] Erro ao responder Handshake: " << e.what() << "\n";
                 });
-                channel_->sendHandshake(std::move(responsePayload), promise);
+                channel_->sendHandshake(std::move(responsePayload), std::move(promise));
             } else {
                 std::cout << "[ControlChannel] Handshake SSL Concluído com Sucesso! Enviando AuthComplete...\n";
                 aap_protobuf::service::control::message::AuthResponse authResponse;
-                authResponse.set_status(0); // OK
+                authResponse.set_status(0); 
                 
                 auto promise = aasdk::channel::SendPromise::defer(strand_);
                 promise->then([]() {

@@ -16,6 +16,7 @@ AndroidAutoEntityImpl::AndroidAutoEntityImpl(boost::asio::io_context& ioContext,
     
     auto sslWrapper = std::make_shared<aasdk::transport::SSLWrapper>();
     cryptor_ = std::make_shared<aasdk::messenger::Cryptor>(sslWrapper);
+    cryptor_->init();
     auto messageInStream = std::make_shared<aasdk::messenger::MessageInStream>(ioContext_, transport_, cryptor_);
     auto messageOutStream = std::make_shared<aasdk::messenger::MessageOutStream>(ioContext_, transport_, cryptor_);
     
